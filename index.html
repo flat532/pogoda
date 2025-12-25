@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stacja Pogodowa Gliwice</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #f0f2f5; font-size: 0.9rem; font-family: 'Segoe UI', sans-serif; }
+        .card { margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: none; }
+        .card-header { background-color: #fff; font-weight: bold; border-bottom: 2px solid #f0f2f5; }
+        
+        .stat-val { font-size: 1.5rem; font-weight: 700; }
+        .stat-label { font-size: 0.8rem; color: #6c757d; text-transform: uppercase; }
+        
+        /* Wykresy */
+        .chart-wrapper { position: relative; height: 180px; width: 100%; }
+        .year-chart-wrapper { position: relative; height: 250px; width: 100%; }
+
+        .table-month td, .table-month th { padding: 0.5rem; font-size: 0.85rem; }
+        
+        .record-tile {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 10px;
+            height: 100%;
+            border: 1px solid #e9ecef;
+        }
+        .record-title { font-size: 0.75rem; font-weight: bold; color: #6c757d; text-transform: uppercase; margin-bottom: 8px; text-align: center; }
+        .record-val { font-weight: bold; font-size: 1.1rem; }
+        .record-date { font-size: 0.65rem; color: #adb5bd; display: block; line-height: 1; margin-top: 2px;}
+
+        /* Styl dla Live Data w Navbarze */
+        .live-data span { margin-left: 15px; font-weight: 500; font-size: 0.95rem; }
+        .live-data strong { font-weight: 700; font-size: 1.1rem; }
+        .live-time { font-size: 0.75rem; opacity: 0.8; display: block; text-align: right; margin-top: -2px;}
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-primary mb-3 shadow-sm sticky-top">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+            <span class="navbar-brand mb-0 h1">🌤️ Gliwice</span>
+        </div>
+
+        <div class="text-white text-end live-data d-none d-md-block">
+            <span>🌡️ <span id="navTemp">--</span></span>
+            <span>💧 <span id="navHum">--</span></span>
+            <span>⏲️ <span id="navPress">--</span></span>
+            <small class="live-time" id="navTime">--:--</small>
+        </div>
+        
+        <div class="text-white text-end live-data d-block d-md-none" style="font-size: 0.8rem;">
+            <div><span id="navTempMobile">--</span> | <span id="navHumMobile">--</span></div>
+            <div style="font-size: 0.7rem; opacity: 0.8" id="navTimeMobile">--:--</div>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid px-4 pb-5">
+    
+    <div class="row">
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <label class="form-label fw-bold text-muted">WYBIERZ DZIEŃ</label>
+                    <div class="input-group">
+                        <input type="date" id="datePicker" class="form-control">
+                        <button class="btn btn-primary" onclick="loadData()">Pokaż</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-primary" style="border-width: 0 0 0 4px;">
+                <div class="card-header">📊 Wybrany Dzień</div>
+                <div class="card-body">
+                    <div class="row text-center mb-3">
+                        <div class="col-6 border-end">
+                            <div class="text-danger stat-val" id="dayMax">--</div>
+                            <div class="stat-label">Max Temp</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-primary stat-val" id="dayMin">--</div>
+                            <div class="stat-label">Min Temp</div>
+                        </div>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">Ciśnienie</span> <strong id="detPressure">--</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">Wiatr</span> <strong id="detWind">--</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">Opady</span> <strong id="detRain">--</strong>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header" id="tempHeader">🌡️ Temperatura</div>
+                <div class="card-body">
+                    <div class="chart-wrapper">
+                        <canvas id="tempChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+				<div class="card">
+                <div class="card-header" id="pressHeader">⏲️ Ciśnienie</div>
+                <div class="card-body">
+                    <div class="chart-wrapper">
+                        <canvas id="pressChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            
+            <div class="card border-warning" style="border-width: 0 0 0 4px;">
+                <div class="card-header">🏆 Rekordy Roku</div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div class="record-tile">
+                                <div class="record-title">🌡️ Temp</div>
+                                <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
+                                    <span class="badge bg-danger p-1" style="font-size: 0.6rem;">MAX</span>
+                                    <div class="text-end lh-1">
+                                        <div class="record-val text-dark" id="yearMax">--</div>
+                                        <span class="record-date" id="yearMaxDate">--</span>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-primary p-1" style="font-size: 0.6rem;">MIN</span>
+                                    <div class="text-end lh-1">
+                                        <div class="record-val text-dark" id="yearMin">--</div>
+                                        <span class="record-date" id="yearMinDate">--</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="record-tile">
+                                <div class="record-title">⏲️ Ciśnienie</div>
+                                <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
+                                    <span class="badge bg-secondary p-1" style="font-size: 0.6rem;">MAX</span>
+                                    <div class="text-end lh-1">
+                                        <div class="record-val text-dark" id="yearMaxPress">--</div>
+                                        <span class="record-date" id="yearMaxPressDate">--</span>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-secondary p-1" style="font-size: 0.6rem; opacity: 0.7">MIN</span>
+                                    <div class="text-end lh-1">
+                                        <div class="record-val text-dark" id="yearMinPress">--</div>
+                                        <span class="record-date" id="yearMinPressDate">--</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">📅 Przegląd Miesięcy</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                        <table class="table table-striped table-hover table-month mb-0 text-center">
+                            <thead class="table-dark sticky-top">
+                                <tr>
+                                    <th>Miesiąc</th>
+                                    <th>Max</th>
+                                    <th>Min</th>
+                                </tr>
+                            </thead>
+                            <tbody id="monthlyTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> 
+
+    <div class="row mt-2">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>📈 Trend Roczny (Min / Max)</span>
+                    <small class="text-muted">Ostatnie 12 miesięcy</small>
+                </div>
+                <div class="card-body">
+                    <div class="year-chart-wrapper">
+                        <canvas id="yearTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let tempChartInstance = null;
+	let pressChartInstance = null
+    let yearChartInstance = null;
+
+    document.getElementById('datePicker').valueAsDate = new Date();
+
+    // --- 1. FUNKCJA DO POBIERANIA AKTUALNEGO STANU (NAVBAR) ---
+    async function loadCurrentStatus() {
+        try {
+            const response = await fetch('api.php?action=current');
+            const data = await response.json();
+            
+            if (data) {
+                // Wersja Desktop
+                document.getElementById('navTemp').innerText = parseFloat(data.temperature).toFixed(1) + "°C";
+                document.getElementById('navHum').innerText = data.humidity + "%";
+                document.getElementById('navPress').innerText = data.pressure + " hPa";
+                document.getElementById('navTime').innerText = "Ost. pomiar: " + data.measurement_datetime.substring(11, 16); // Tylko godzina HH:MM
+
+                // Wersja Mobilna
+                document.getElementById('navTempMobile').innerText = parseFloat(data.temperature).toFixed(1) + "°C";
+                document.getElementById('navHumMobile').innerText = data.humidity + "%";
+                document.getElementById('navTimeMobile').innerText = data.measurement_datetime.substring(11, 16);
+            }
+        } catch(e) { console.error("Błąd pobierania current status:", e); }
+    }
+
+    async function loadData() {
+        const date = document.getElementById('datePicker').value;
+        
+        document.getElementById('tempHeader').innerText = `🌡️ Temperatura (${date})`;
+        document.getElementById('pressHeader').innerText = `⏲️ Ciśnienie (${date})`;
+
+        // Wywołujemy pobieranie statystyk
+        loadYearlyStats();
+        loadYearlyTrend();
+        loadMonthlyStats();
+        loadCurrentStatus(); // Odśwież też navbar przy okazji kliknięcia
+
+        const response = await fetch(`api.php?action=chart_data&date=${date}`);
+        const data = await response.json();
+
+        if (!data || data.length === 0) {
+            resetDayView();
+            return;
+        }
+
+        const labels = data.map(entry => entry.measurement_datetime.substring(11, 16));
+        const temps = data.map(entry => parseFloat(entry.temperature));
+        const presses = data.map(entry => parseInt(entry.pressure));
+
+        const dayMin = Math.min(...temps);
+        const dayMax = Math.max(...temps);
+        
+        document.getElementById('dayMin').innerText = dayMin.toFixed(1) + "°C";
+        document.getElementById('dayMax').innerText = dayMax.toFixed(1) + "°C";
+
+        const last = data[data.length - 1];
+        document.getElementById('detPressure').innerText = last.pressure + " hPa";
+        document.getElementById('detWind').innerText = last.wind_speed + " m/s";
+        document.getElementById('detRain').innerText = (parseFloat(last.rainfall) || 0) + " mm";
+
+        renderChart('tempChart', labels, temps, 'Temperatura', 'rgb(220, 53, 69)', tempChartInstance, (i) => tempChartInstance = i);
+        renderChart('pressChart', labels, presses, 'Ciśnienie', 'rgb(25, 135, 84)', pressChartInstance, (i) => pressChartInstance = i);
+    }
+
+    async function loadYearlyTrend() {
+        try {
+            const response = await fetch('api.php?action=yearly_trend');
+            const data = await response.json();
+            if (!data || data.length === 0) return;
+
+            const labels = data.map(e => e.date);
+            const maxTemps = data.map(e => parseFloat(e.max_temp));
+            const minTemps = data.map(e => parseFloat(e.min_temp));
+
+            const ctx = document.getElementById('yearTrendChart').getContext('2d');
+            if (yearChartInstance) yearChartInstance.destroy();
+
+            yearChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Max Temp (°C)', data: maxTemps, borderColor: 'rgb(220, 53, 69)', backgroundColor: 'rgba(220, 53, 69, 0.1)', borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.4 },
+                        { label: 'Min Temp (°C)', data: minTemps, borderColor: 'rgb(13, 110, 253)', backgroundColor: 'rgba(13, 110, 253, 0.1)', borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.4 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { display: true, position: 'top' } },
+                    scales: {
+                        x: { display: true, grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 12, maxRotation: 0, callback: function(val) { const d = new Date(this.getLabelForValue(val)); return d.toLocaleDateString('pl-PL', { month: 'short' }); } } },
+                        y: { display: true }
+                    }
+                }
+            });
+        } catch(e) {}
+    }
+
+    async function loadMonthlyStats() {
+        try {
+            const response = await fetch('api.php?action=monthly_stats');
+            const data = await response.json();
+            const tbody = document.getElementById('monthlyTableBody');
+            tbody.innerHTML = '';
+            data.forEach(row => {
+                const dateObj = new Date(row.month_id + "-01");
+                const monthName = dateObj.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
+                const formattedName = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+                const tr = `<tr><td class="text-start fw-bold text-muted">${formattedName}</td><td class="text-danger fw-bold">${parseFloat(row.max_temp).toFixed(1)}°</td><td class="text-primary fw-bold">${parseFloat(row.min_temp).toFixed(1)}°</td></tr>`;
+                tbody.innerHTML += tr;
+            });
+        } catch(e) {}
+    }
+
+    async function loadYearlyStats() {
+        try {
+            const response = await fetch('api.php?action=year_stats');
+            const stats = await response.json();
+            
+            document.getElementById('yearMax').innerText = stats.max_temp + "°";
+            document.getElementById('yearMin').innerText = stats.min_temp + "°";
+            document.getElementById('yearMaxDate').innerText = stats.max_temp_date ? stats.max_temp_date.substring(0,10) : '-';
+            document.getElementById('yearMinDate').innerText = stats.min_temp_date ? stats.min_temp_date.substring(0,10) : '-';
+            
+            document.getElementById('yearMaxPress').innerText = stats.max_press;
+            document.getElementById('yearMinPress').innerText = stats.min_press;
+            document.getElementById('yearMaxPressDate').innerText = stats.max_press_date ? stats.max_press_date.substring(0,10) : '-';
+            document.getElementById('yearMinPressDate').innerText = stats.min_press_date ? stats.min_press_date.substring(0,10) : '-';
+            
+        } catch(e) { console.error(e); }
+    }
+
+    function renderChart(canvasId, labels, data, label, color, oldInstance, setInstance) {
+        if (oldInstance) oldInstance.destroy();
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        setInstance(new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{ label: label, data: data, borderColor: color, backgroundColor: color.replace('rgb', 'rgba').replace(')', ', 0.1)'), borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, fill: true, tension: 0.4 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } } } }
+        }));
+    }
+
+    function resetDayView() {
+        document.getElementById('dayMin').innerText = "--";
+        document.getElementById('dayMax').innerText = "--";
+        if(tempChartInstance) tempChartInstance.destroy();
+       if(pressChartInstance) pressChartInstance.destroy();
+    }
+
+    // Na start:
+    loadCurrentStatus(); // 1. Wczytaj navbar
+    loadData(); // 2. Wczytaj resztę (wykresy)
+</script>
+
+</body>
+</html>
