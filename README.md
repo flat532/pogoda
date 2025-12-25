@@ -92,5 +92,5 @@ archive/ - Directory for storing raw JSON responses (auto-generated).
 
 ### Security
 Sensitive data (passwords, API keys) are strictly decoupled from the source code using the .env file. Ensure that .env and the archive/ directory are not publicly accessible via the web server.
---------
+
 © 2025 Weather Station Project
