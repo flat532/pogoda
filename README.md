@@ -55,10 +55,11 @@ CREATE TABLE weather_data (
     UNIQUE KEY unique_measurement (location, measurement_datetime)
 );
 
-
+```
 
 ## This project uses a .env file to store sensitive credentials securely. Create a .env file in the root directory and populate it with your details:
 
+```shell
 DB_HOST=localhost
 DB_NAME=your_database_name
 DB_USER=your_database_user
@@ -68,18 +69,19 @@ DB_CHARSET=utf8mb4
 WEATHER_API_KEY=your_openweathermap_api_key
 WEATHER_LOCATION=Gliwice
 WEATHER_API_URL=[http://api.openweathermap.org/data/2.5/weather](http://api.openweathermap.org/data/2.5/weather)
-
+```
 * Security Note * 
 The .env file is excluded from version control via .gitignore to prevent credential leakage.
 
 To enable automatic data fetching and archiving, add the following lines to your crontab (crontab -e):
 
+```bash
 # Fetch weather data every hour
 0 * * * * php /path/to/project/update_data.php >/dev/null 2>&1
 
 # Archive old JSON files (at the 59th minute of every hour)
 59 * * * * /path/to/project/arch.sh >/dev/null 2>&1
-
+```
 
 File Structure
 index.html - Main user interface and dashboard.
@@ -96,5 +98,3 @@ archive/ - Directory for storing raw JSON responses (auto-generated).
 
 Security
 Sensitive data (passwords, API keys) are strictly decoupled from the source code using the .env file. Ensure that .env and the archive/ directory are not publicly accessible via the web server.
-
-
