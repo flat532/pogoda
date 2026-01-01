@@ -15,25 +15,36 @@ try {
     $action = $_GET['action'] ?? 'chart_data';
     $date = $_GET['date'] ?? date('Y-m-d');
 
-    // 1. DANE DZIENNE
+    // 1. DANE DZIENNE (To zostało usunięte, a jest konieczne jako pierwszy 'if')
     if ($action === 'chart_data') {
         $stmt = $pdo->prepare("SELECT * FROM weather_data WHERE DATE(measurement_datetime) = :selectedDate ORDER BY measurement_datetime ASC");
         $stmt->execute(['selectedDate' => $date]);
         echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
     }
 
-    // 2. REKORDY ROCZNE
+    // 2. REKORDY ROCZNE (Twoja nowa sekcja)
     elseif ($action === 'year_stats') {
-        $stmt = $pdo->query("
+        // Pobierz rok z parametru GET lub użyj bieżącego
+        $year = isset($_GET['year']) ? intval($_GET['year']) : date('Y');
+
+        // Przygotowanie zapytania z filtrowaniem po roku
+        $sql = "
             SELECT 
-                MAX(temperature) as max_temp, MIN(temperature) as min_temp,
-                (SELECT measurement_datetime FROM weather_data WHERE temperature = (SELECT MAX(temperature) FROM weather_data WHERE measurement_datetime > DATE_SUB(NOW(), INTERVAL 1 YEAR)) LIMIT 1) as max_temp_date,
-                (SELECT measurement_datetime FROM weather_data WHERE temperature = (SELECT MIN(temperature) FROM weather_data WHERE measurement_datetime > DATE_SUB(NOW(), INTERVAL 1 YEAR)) LIMIT 1) as min_temp_date,
-                MAX(pressure) as max_press, MIN(pressure) as min_press,
-                (SELECT measurement_datetime FROM weather_data WHERE pressure = (SELECT MAX(pressure) FROM weather_data WHERE measurement_datetime > DATE_SUB(NOW(), INTERVAL 1 YEAR)) LIMIT 1) as max_press_date,
-                (SELECT measurement_datetime FROM weather_data WHERE pressure = (SELECT MIN(pressure) FROM weather_data WHERE measurement_datetime > DATE_SUB(NOW(), INTERVAL 1 YEAR)) LIMIT 1) as min_press_date
-            FROM weather_data WHERE measurement_datetime > DATE_SUB(NOW(), INTERVAL 1 YEAR)
-        ");
+                MAX(temperature) as max_temp, 
+                MIN(temperature) as min_temp,
+                (SELECT measurement_datetime FROM weather_data WHERE temperature = (SELECT MAX(temperature) FROM weather_data WHERE YEAR(measurement_datetime) = :year) AND YEAR(measurement_datetime) = :year LIMIT 1) as max_temp_date,
+                (SELECT measurement_datetime FROM weather_data WHERE temperature = (SELECT MIN(temperature) FROM weather_data WHERE YEAR(measurement_datetime) = :year) AND YEAR(measurement_datetime) = :year LIMIT 1) as min_temp_date,
+                
+                MAX(pressure) as max_press, 
+                MIN(pressure) as min_press,
+                (SELECT measurement_datetime FROM weather_data WHERE pressure = (SELECT MAX(pressure) FROM weather_data WHERE YEAR(measurement_datetime) = :year) AND YEAR(measurement_datetime) = :year LIMIT 1) as max_press_date,
+                (SELECT measurement_datetime FROM weather_data WHERE pressure = (SELECT MIN(pressure) FROM weather_data WHERE YEAR(measurement_datetime) = :year) AND YEAR(measurement_datetime) = :year LIMIT 1) as min_press_date
+            FROM weather_data 
+            WHERE YEAR(measurement_datetime) = :year
+        ";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute(['year' => $year]);
         echo json_encode($stmt->fetch(PDO::FETCH_ASSOC));
     }
 

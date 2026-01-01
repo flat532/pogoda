@@ -56,7 +56,9 @@ CREATE TABLE weather_data (
 );
 
 ```
-### This project uses a .env file to store sensitive credentials securely. Create a .env file in the root directory and populate it with your details:
+### Security file structure
+This project uses a .env file to store sensitive credentials securely.
+Create a .env file in the root directory and populate it with your details:
 
 ```shell
 DB_HOST=localhost
@@ -71,7 +73,6 @@ WEATHER_API_URL=[http://api.openweathermap.org/data/2.5/weather](http://api.open
 ```
 ### Security Note 
 The .env file is excluded from version control via .gitignore to prevent credential leakage.
-
 To enable automatic data fetching and archiving, add the following lines to your crontab (crontab -e):
 
 ```shell
@@ -91,6 +92,7 @@ arch.sh - Bash script for archiving and compressing raw JSON data.
 archive/ - Directory for storing raw JSON responses (auto-generated).
 
 ### Security
-Sensitive data (passwords, API keys) are strictly decoupled from the source code using the .env file. Ensure that .env and the archive/ directory are not publicly accessible via the web server.
+Sensitive data (passwords, API keys) are strictly decoupled from the source code using the .env file.
+Ensure that .env and the archive/ directory are not publicly accessible via the web server.
 
 © 2025 Weather Station Project

@@ -29,7 +29,7 @@
         }
         .record-title { font-size: 0.75rem; font-weight: bold; color: #6c757d; text-transform: uppercase; margin-bottom: 8px; text-align: center; }
         .record-val { font-weight: bold; font-size: 1.1rem; }
-        .record-date { font-size: 0.65rem; color: #adb5bd; display: block; line-height: 1; margin-top: 2px;}
+        .record-date { font-size: 0.7rem; color: #6c757d; display: block; line-height: 1.2; margin-top: 4px; font-style: italic;}
 
         /* Styl dla Live Data w Navbarze */
         .live-data span { margin-left: 15px; font-weight: 500; font-size: 0.95rem; }
@@ -112,7 +112,7 @@
                 </div>
             </div>
 
-				<div class="card">
+            <div class="card">
                 <div class="card-header" id="pressHeader">⏲️ Ciśnienie</div>
                 <div class="card-body">
                     <div class="chart-wrapper">
@@ -125,47 +125,158 @@
         <div class="col-lg-4">
             
             <div class="card border-warning" style="border-width: 0 0 0 4px;">
-                <div class="card-header">🏆 Rekordy Roku</div>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>🏆 Rekordy</span>
+                    <ul class="nav nav-pills card-header-pills" id="recordsTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active py-0 px-2" id="curr-year-tab" data-bs-toggle="tab" data-bs-target="#curr-year-pane" type="button" role="tab" style="font-size: 0.8rem;">
+                                <span id="labelCurrYear">Current</span>
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-0 px-2" id="prev-year-tab" data-bs-toggle="tab" data-bs-target="#prev-year-pane" type="button" role="tab" style="font-size: 0.8rem;">
+                                <span id="labelPrevYear">Prev</span>
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-0 px-2" id="past-year-tab" data-bs-toggle="tab" data-bs-target="#past-year-pane" type="button" role="tab" style="font-size: 0.8rem;">
+                                <span id="labelPastYear">Past</span>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
                 <div class="card-body">
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <div class="record-tile">
-                                <div class="record-title">🌡️ Temp</div>
-                                <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
-                                    <span class="badge bg-danger p-1" style="font-size: 0.6rem;">MAX</span>
-                                    <div class="text-end lh-1">
-                                        <div class="record-val text-dark" id="yearMax">--</div>
-                                        <span class="record-date" id="yearMaxDate">--</span>
+                    <div class="tab-content" id="recordsTabContent">
+                        
+                        <div class="tab-pane fade show active" id="curr-year-pane" role="tabpanel">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div class="record-tile">
+                                        <div class="record-title">🌡️ Temp (<span id="titleCurrYear">--</span>)</div>
+                                        <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
+                                            <span class="badge bg-danger p-1" style="font-size: 0.6rem;">MAX</span>
+                                            <div class="text-end lh-1">
+                                                <div class="record-val text-dark" id="currYearMax">--</div>
+                                                <span class="record-date" id="currYearMaxDate">--</span>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="badge bg-primary p-1" style="font-size: 0.6rem;">MIN</span>
+                                            <div class="text-end lh-1">
+                                                <div class="record-val text-dark" id="currYearMin">--</div>
+                                                <span class="record-date" id="currYearMinDate">--</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="badge bg-primary p-1" style="font-size: 0.6rem;">MIN</span>
-                                    <div class="text-end lh-1">
-                                        <div class="record-val text-dark" id="yearMin">--</div>
-                                        <span class="record-date" id="yearMinDate">--</span>
+                                <div class="col-6">
+                                    <div class="record-tile">
+                                        <div class="record-title">⏲️ Ciśnienie</div>
+                                        <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
+                                            <span class="badge bg-secondary p-1" style="font-size: 0.6rem;">MAX</span>
+                                            <div class="text-end lh-1">
+                                                <div class="record-val text-dark" id="currYearMaxPress">--</div>
+                                                <span class="record-date" id="currYearMaxPressDate">--</span>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="badge bg-secondary p-1" style="font-size: 0.6rem; opacity: 0.7">MIN</span>
+                                            <div class="text-end lh-1">
+                                                <div class="record-val text-dark" id="currYearMinPress">--</div>
+                                                <span class="record-date" id="currYearMinPressDate">--</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-6">
-                            <div class="record-tile">
-                                <div class="record-title">⏲️ Ciśnienie</div>
-                                <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
-                                    <span class="badge bg-secondary p-1" style="font-size: 0.6rem;">MAX</span>
-                                    <div class="text-end lh-1">
-                                        <div class="record-val text-dark" id="yearMaxPress">--</div>
-                                        <span class="record-date" id="yearMaxPressDate">--</span>
+
+                        <div class="tab-pane fade" id="prev-year-pane" role="tabpanel">
+                             <div class="row g-2">
+                                <div class="col-6">
+                                    <div class="record-tile">
+                                        <div class="record-title">🌡️ Temp (<span id="titlePrevYear">--</span>)</div>
+                                        <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
+                                            <span class="badge bg-danger p-1" style="font-size: 0.6rem;">MAX</span>
+                                            <div class="text-end lh-1">
+                                                <div class="record-val text-dark" id="prevYearMax">--</div>
+                                                <span class="record-date" id="prevYearMaxDate">--</span>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="badge bg-primary p-1" style="font-size: 0.6rem;">MIN</span>
+                                            <div class="text-end lh-1">
+                                                <div class="record-val text-dark" id="prevYearMin">--</div>
+                                                <span class="record-date" id="prevYearMinDate">--</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="badge bg-secondary p-1" style="font-size: 0.6rem; opacity: 0.7">MIN</span>
-                                    <div class="text-end lh-1">
-                                        <div class="record-val text-dark" id="yearMinPress">--</div>
-                                        <span class="record-date" id="yearMinPressDate">--</span>
+                                <div class="col-6">
+                                    <div class="record-tile">
+                                        <div class="record-title">⏲️ Ciśnienie</div>
+                                        <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
+                                            <span class="badge bg-secondary p-1" style="font-size: 0.6rem;">MAX</span>
+                                            <div class="text-end lh-1">
+                                                <div class="record-val text-dark" id="prevYearMaxPress">--</div>
+                                                <span class="record-date" id="prevYearMaxPressDate">--</span>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="badge bg-secondary p-1" style="font-size: 0.6rem; opacity: 0.7">MIN</span>
+                                            <div class="text-end lh-1">
+                                                <div class="record-val text-dark" id="prevYearMinPress">--</div>
+                                                <span class="record-date" id="prevYearMinPressDate">--</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+
+                        <div class="tab-pane fade" id="past-year-pane" role="tabpanel">
+                            <div class="row g-2">
+                               <div class="col-6">
+                                   <div class="record-tile">
+                                       <div class="record-title">🌡️ Temp (<span id="titlePastYear">--</span>)</div>
+                                       <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
+                                           <span class="badge bg-danger p-1" style="font-size: 0.6rem;">MAX</span>
+                                           <div class="text-end lh-1">
+                                               <div class="record-val text-dark" id="pastYearMax">--</div>
+                                               <span class="record-date" id="pastYearMaxDate">--</span>
+                                           </div>
+                                       </div>
+                                       <div class="d-flex justify-content-between align-items-center">
+                                           <span class="badge bg-primary p-1" style="font-size: 0.6rem;">MIN</span>
+                                           <div class="text-end lh-1">
+                                               <div class="record-val text-dark" id="pastYearMin">--</div>
+                                               <span class="record-date" id="pastYearMinDate">--</span>
+                                           </div>
+                                       </div>
+                                   </div>
+                               </div>
+                               <div class="col-6">
+                                   <div class="record-tile">
+                                       <div class="record-title">⏲️ Ciśnienie</div>
+                                       <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
+                                           <span class="badge bg-secondary p-1" style="font-size: 0.6rem;">MAX</span>
+                                           <div class="text-end lh-1">
+                                               <div class="record-val text-dark" id="pastYearMaxPress">--</div>
+                                               <span class="record-date" id="pastYearMaxPressDate">--</span>
+                                           </div>
+                                       </div>
+                                       <div class="d-flex justify-content-between align-items-center">
+                                           <span class="badge bg-secondary p-1" style="font-size: 0.6rem; opacity: 0.7">MIN</span>
+                                           <div class="text-end lh-1">
+                                               <div class="record-val text-dark" id="pastYearMinPress">--</div>
+                                               <span class="record-date" id="pastYearMinPressDate">--</span>
+                                           </div>
+                                       </div>
+                                   </div>
+                               </div>
+                           </div>
+                       </div>
+
                     </div>
                 </div>
             </div>
@@ -208,12 +319,22 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
     let tempChartInstance = null;
-	let pressChartInstance = null
+    let pressChartInstance = null;
     let yearChartInstance = null;
 
     document.getElementById('datePicker').valueAsDate = new Date();
+
+    // Funkcja formatująca datę na polską (np. "18 stycznia")
+    function formatPolishDate(dateStr) {
+        if (!dateStr) return '-';
+        const date = new Date(dateStr);
+        // Używamy natywnego API przeglądarki do formatowania dat
+        return date.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long' });
+    }
 
     // --- 1. FUNKCJA DO POBIERANIA AKTUALNEGO STANU (NAVBAR) ---
     async function loadCurrentStatus() {
@@ -226,7 +347,7 @@
                 document.getElementById('navTemp').innerText = parseFloat(data.temperature).toFixed(1) + "°C";
                 document.getElementById('navHum').innerText = data.humidity + "%";
                 document.getElementById('navPress').innerText = data.pressure + " hPa";
-                document.getElementById('navTime').innerText = "Ost. pomiar: " + data.measurement_datetime.substring(11, 16); // Tylko godzina HH:MM
+                document.getElementById('navTime').innerText = "Ost. pomiar: " + data.measurement_datetime.substring(11, 16); 
 
                 // Wersja Mobilna
                 document.getElementById('navTempMobile').innerText = parseFloat(data.temperature).toFixed(1) + "°C";
@@ -246,7 +367,7 @@
         loadYearlyStats();
         loadYearlyTrend();
         loadMonthlyStats();
-        loadCurrentStatus(); // Odśwież też navbar przy okazji kliknięcia
+        loadCurrentStatus(); 
 
         const response = await fetch(`api.php?action=chart_data&date=${date}`);
         const data = await response.json();
@@ -325,22 +446,51 @@
         } catch(e) {}
     }
 
+    // --- ZMODYFIKOWANA FUNKCJA REKORDÓW ROCZNYCH (3 LATA + POLSKIE DATY) ---
     async function loadYearlyStats() {
-        try {
-            const response = await fetch('api.php?action=year_stats');
-            const stats = await response.json();
-            
-            document.getElementById('yearMax').innerText = stats.max_temp + "°";
-            document.getElementById('yearMin').innerText = stats.min_temp + "°";
-            document.getElementById('yearMaxDate').innerText = stats.max_temp_date ? stats.max_temp_date.substring(0,10) : '-';
-            document.getElementById('yearMinDate').innerText = stats.min_temp_date ? stats.min_temp_date.substring(0,10) : '-';
-            
-            document.getElementById('yearMaxPress').innerText = stats.max_press;
-            document.getElementById('yearMinPress').innerText = stats.min_press;
-            document.getElementById('yearMaxPressDate').innerText = stats.max_press_date ? stats.max_press_date.substring(0,10) : '-';
-            document.getElementById('yearMinPressDate').innerText = stats.min_press_date ? stats.min_press_date.substring(0,10) : '-';
-            
-        } catch(e) { console.error(e); }
+        const currentYear = new Date().getFullYear();
+        const prevYear = currentYear - 1;
+        const pastYear = currentYear - 2; // Dodany rok (2024)
+
+        // Ustawienie etykiet lat w zakładkach
+        document.getElementById('labelCurrYear').innerText = currentYear;
+        document.getElementById('titleCurrYear').innerText = currentYear;
+        
+        document.getElementById('labelPrevYear').innerText = prevYear;
+        document.getElementById('titlePrevYear').innerText = prevYear;
+
+        document.getElementById('labelPastYear').innerText = pastYear;
+        document.getElementById('titlePastYear').innerText = pastYear;
+
+        // Funkcja pomocnicza do pobierania i wypełniania danych dla konkretnego roku
+        const fetchAndFill = async (year, prefix) => {
+            try {
+                const response = await fetch(`api.php?action=year_stats&year=${year}`);
+                const stats = await response.json();
+                
+                if(!stats) return;
+
+                // Temperatura
+                document.getElementById(prefix + 'Max').innerText = stats.max_temp ? stats.max_temp + "°" : '--';
+                document.getElementById(prefix + 'Min').innerText = stats.min_temp ? stats.min_temp + "°" : '--';
+                
+                // Użycie funkcji formatującej datę (np. "18 stycznia")
+                document.getElementById(prefix + 'MaxDate').innerText = formatPolishDate(stats.max_temp_date);
+                document.getElementById(prefix + 'MinDate').innerText = formatPolishDate(stats.min_temp_date);
+
+                // Ciśnienie
+                document.getElementById(prefix + 'MaxPress').innerText = stats.max_press ? stats.max_press : '--';
+                document.getElementById(prefix + 'MinPress').innerText = stats.min_press ? stats.min_press : '--';
+                document.getElementById(prefix + 'MaxPressDate').innerText = formatPolishDate(stats.max_press_date);
+                document.getElementById(prefix + 'MinPressDate').innerText = formatPolishDate(stats.min_press_date);
+
+            } catch(e) { console.error(`Błąd pobierania statystyk dla roku ${year}:`, e); }
+        };
+
+        // Wywołanie dla trzech lat
+        await fetchAndFill(currentYear, 'currYear');
+        await fetchAndFill(prevYear, 'prevYear');
+        await fetchAndFill(pastYear, 'pastYear');
     }
 
     function renderChart(canvasId, labels, data, label, color, oldInstance, setInstance) {
@@ -360,12 +510,12 @@
         document.getElementById('dayMin').innerText = "--";
         document.getElementById('dayMax').innerText = "--";
         if(tempChartInstance) tempChartInstance.destroy();
-       if(pressChartInstance) pressChartInstance.destroy();
+        if(pressChartInstance) pressChartInstance.destroy();
     }
 
     // Na start:
-    loadCurrentStatus(); // 1. Wczytaj navbar
-    loadData(); // 2. Wczytaj resztę (wykresy)
+    loadCurrentStatus(); 
+    loadData(); 
 </script>
 
 </body>
