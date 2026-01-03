@@ -62,8 +62,49 @@ try {
 
     // 5. AKTUALNE WARUNKI
     elseif ($action === 'current') {
+        // Pobierz najnowszy pomiar
         $stmt = $pdo->query("SELECT * FROM weather_data ORDER BY measurement_datetime DESC LIMIT 1");
-        echo json_encode($stmt->fetch(PDO::FETCH_ASSOC));
+        $currentData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($currentData) {
+            // Logika porównania z rokiem ubiegłym
+            $currentDate = new DateTime($currentData['measurement_datetime']);
+            $pastDateTarget = (clone $currentDate)->modify('-1 year');
+            
+            // Szukamy pomiaru sprzed roku (tolerancja +/- 1 godzina)
+            $pastStart = (clone $pastDateTarget)->modify('-1 hour')->format('Y-m-d H:i:s');
+            $pastEnd   = (clone $pastDateTarget)->modify('+1 hour')->format('Y-m-d H:i:s');
+
+            $stmtPast = $pdo->prepare("
+                SELECT temperature, measurement_datetime 
+                FROM weather_data 
+                WHERE measurement_datetime BETWEEN :start AND :end 
+                ORDER BY ABS(TIMESTAMPDIFF(SECOND, measurement_datetime, :target)) ASC 
+                LIMIT 1
+            ");
+            
+            $stmtPast->execute([
+                'start' => $pastStart,
+                'end' => $pastEnd,
+                'target' => $pastDateTarget->format('Y-m-d H:i:s')
+            ]);
+            
+            $pastData = $stmtPast->fetch(PDO::FETCH_ASSOC);
+
+            if ($pastData) {
+                $diff = floatval($currentData['temperature']) - floatval($pastData['temperature']);
+                $currentData['historical_comparison'] = [
+                    'available' => true,
+                    'diff' => $diff,
+                    'past_temp' => floatval($pastData['temperature']),
+                    'past_date' => $pastData['measurement_datetime']
+                ];
+            } else {
+                $currentData['historical_comparison'] = ['available' => false];
+            }
+        }
+
+        echo json_encode($currentData);
     }
 
 } catch (PDOException $e) {
