@@ -126,6 +126,10 @@ try {
     }
 
     // 5. TABELA MIESIĘCZNA
+    elseif ($action === 'monthly_stats') {
+        $stmt = $pdo->query("SELECT DATE_FORMAT(measurement_datetime, '%Y-%m') as month_id, MAX(temperature) as max_temp, MIN(temperature) as min_temp FROM weather_data WHERE measurement_datetime > DATE_SUB(NOW(), INTERVAL 1 YEAR) GROUP BY month_id ORDER BY month_id DESC");
+        echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+    }
 
     // 5. AKTUALNE WARUNKI
     elseif ($action === 'current') {
