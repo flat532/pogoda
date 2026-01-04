@@ -54,11 +54,78 @@ try {
         echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
     }
 
-    // 4. TABELA MIESIĘCZNA
-    elseif ($action === 'monthly_stats') {
-        $stmt = $pdo->query("SELECT DATE_FORMAT(measurement_datetime, '%Y-%m') as month_id, MAX(temperature) as max_temp, MIN(temperature) as min_temp FROM weather_data WHERE measurement_datetime > DATE_SUB(NOW(), INTERVAL 1 YEAR) GROUP BY month_id ORDER BY month_id DESC");
-        echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+    // 4. ŚREDNIE TEMPERATURY (NOWE)
+    elseif ($action === 'avg_stats') {
+        $range = $_GET['range'] ?? '30days';
+        
+        $sql = "";
+        $params = [];
+
+        if ($range === 'today') {
+            // Grupuj po godzinie dla dzisiejszego dnia
+            $sql = "SELECT DATE_FORMAT(measurement_datetime, '%Y-%m-%d %H:00') as date_label, AVG(temperature) as avg_temp 
+                    FROM weather_data 
+                    WHERE DATE(measurement_datetime) = CURDATE() 
+                    GROUP BY date_label 
+                    ORDER BY date_label ASC";
+        } elseif ($range === '7days') {
+            $sql = "SELECT DATE(measurement_datetime) as date_label, AVG(temperature) as avg_temp 
+                    FROM weather_data 
+                    WHERE measurement_datetime > DATE_SUB(NOW(), INTERVAL 7 DAY) 
+                    GROUP BY date_label 
+                    ORDER BY date_label ASC";
+        } elseif ($range === '30days') {
+            $sql = "SELECT DATE(measurement_datetime) as date_label, AVG(temperature) as avg_temp 
+                    FROM weather_data 
+                    WHERE measurement_datetime > DATE_SUB(NOW(), INTERVAL 30 DAY) 
+                    GROUP BY date_label 
+                    ORDER BY date_label ASC";
+        } elseif ($range === 'month') {
+            // Ten miesiąc
+            $sql = "SELECT DATE(measurement_datetime) as date_label, AVG(temperature) as avg_temp 
+                    FROM weather_data 
+                    WHERE YEAR(measurement_datetime) = YEAR(CURDATE()) AND MONTH(measurement_datetime) = MONTH(CURDATE())
+                    GROUP BY date_label 
+                    ORDER BY date_label ASC";
+        } elseif ($range === 'year' || $range === 'current_year') {
+            // Ten rok (grupowanie po miesiącach dla czytelności wykresu rocznego, lub dniach - decyzja: MIESIĄCE dla 'Year')
+            // EDIT: User want "Daily" detail usually, but for "This Year" average, monthly is clearer. 
+            // Let's stick to Daily for consistency with tabs like "2024" if they want detail? 
+            // Actually, for "Average Temp" over a FULL YEAR, monthly bars/line is standard. Daily is too noisy for "Average".
+            // Let's do Monthly averages for year views.
+            $sql = "SELECT DATE_FORMAT(measurement_datetime, '%Y-%m') as date_label, AVG(temperature) as avg_temp 
+                    FROM weather_data 
+                    WHERE YEAR(measurement_datetime) = YEAR(CURDATE())
+                    GROUP BY date_label 
+                    ORDER BY date_label ASC";
+        } elseif (is_numeric($range)) {
+             // Konkretny rok (np. 2025, 2024) - też miesięcznie
+             $year = intval($range);
+             $sql = "SELECT DATE_FORMAT(measurement_datetime, '%Y-%m') as date_label, AVG(temperature) as avg_temp 
+                    FROM weather_data 
+                    WHERE YEAR(measurement_datetime) = :year
+                    GROUP BY date_label 
+                    ORDER BY date_label ASC";
+             $params['year'] = $year;
+        } else {
+            // Default 30 days
+             $sql = "SELECT DATE(measurement_datetime) as date_label, AVG(temperature) as avg_temp 
+                    FROM weather_data 
+                    WHERE measurement_datetime > DATE_SUB(NOW(), INTERVAL 30 DAY) 
+                    GROUP BY date_label 
+                    ORDER BY date_label ASC";
+        }
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Formatowanie etykiet (opcjonalne, można robić w JS, ale tu też OK)
+        // Zostawiamy surowe dane, JS sformatuje
+        echo json_encode($data);
     }
+
+    // 5. TABELA MIESIĘCZNA
 
     // 5. AKTUALNE WARUNKI
     elseif ($action === 'current') {

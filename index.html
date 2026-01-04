@@ -305,15 +305,53 @@
     </div> 
 
     <div class="row mt-2">
-        <div class="col-12">
-            <div class="card">
+        <!-- Lewa kolumna: Trend Roczny (Min/Max) -->
+        <div class="col-lg-6 mb-3">
+            <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span>📈 Trend Roczny (Min / Max)</span>
                     <small class="text-muted">Ostatnie 12 miesięcy</small>
                 </div>
                 <div class="card-body">
-                    <div class="year-chart-wrapper">
+                    <div class="year-chart-wrapper" style="height: 300px;"> <!-- Zmniejszona wysokość o połowę (Dostosowane w CSS, tutaj inline dla pewności) -->
                         <canvas id="yearTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prawa kolumna: Średnia Temperatura (Nowy wykres) -->
+        <div class="col-lg-6 mb-3">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                    <span>🌡️ Średnia Temperatura</span>
+                    <ul class="nav nav-pills card-header-pills mt-2 mt-md-0" id="avgTabs" role="tablist">
+                         <li class="nav-item">
+                            <button class="nav-link py-0 px-2 active" onclick="loadAvgStats('30days', this)" data-range="30days">30 Dni</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link py-0 px-2" onclick="loadAvgStats('today', this)" data-range="today">Dziś</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link py-0 px-2" onclick="loadAvgStats('7days', this)" data-range="7days">7 Dni</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link py-0 px-2" onclick="loadAvgStats('month', this)" data-range="month">Ten msc</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link py-0 px-2" onclick="loadAvgStats('year', this)" data-range="year">Ten rok</button>
+                        </li>
+                         <li class="nav-item">
+                            <button class="nav-link py-0 px-2" onclick="loadAvgStats('2025', this)" data-range="2025">2025</button>
+                        </li>
+                         <li class="nav-item">
+                            <button class="nav-link py-0 px-2" onclick="loadAvgStats('2024', this)" data-range="2024">2024</button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="chart-wrapper" style="height: 300px;">
+                        <canvas id="avgTempChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -328,6 +366,7 @@
     let tempChartInstance = null;
     let pressChartInstance = null;
     let yearChartInstance = null;
+    let avgChartInstance = null;
 
     document.getElementById('datePicker').valueAsDate = new Date();
 
@@ -540,9 +579,72 @@
         if(pressChartInstance) pressChartInstance.destroy();
     }
 
+    async function loadAvgStats(range, btnElement) {
+        // Obsługa aktywnej klasy na przyciskach
+        if (btnElement) {
+            document.querySelectorAll('#avgTabs .nav-link').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+        }
+
+        try {
+            const response = await fetch(`api.php?action=avg_stats&range=${range}`);
+            const data = await response.json();
+            
+            if (!data) return;
+
+            const labels = data.map(e => {
+                // Formatting label based on range (simple heuristics)
+                if (range === 'today') return e.date_label.substring(11, 16); // Hour:Minute
+                if (range.includes('year') || range === '2025' || range === '2024') {
+                     // Monthly data comes as YYYY-MM
+                     const d = new Date(e.date_label + "-01"); 
+                     return d.toLocaleDateString('pl-PL', { month: 'short' }); 
+                }
+                // Daily data
+                const d = new Date(e.date_label);
+                return d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' });
+            });
+            const values = data.map(e => parseFloat(e.avg_temp));
+
+            const ctx = document.getElementById('avgTempChart').getContext('2d');
+            if (avgChartInstance) avgChartInstance.destroy();
+
+            avgChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Średnia Temp (°C)',
+                        data: values,
+                        borderColor: 'rgb(255, 193, 7)', // Warning color (Yellow/Orange)
+                        backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 2,
+                        pointHoverRadius: 5,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 10 } },
+                        y: { display: true }
+                    }
+                }
+            });
+
+        } catch (e) { console.error('Błąd pobierania średnich temperatur:', e); }
+    }
+
     // Na start:
     loadCurrentStatus(); 
     loadData(); 
+    // Inicjalizacja domyślnego widoku średniej (30 dni)
+    // Znajdź przycisk 30 dni i symuluj kliknięcie lub wywołaj bezpośrednio
+    loadAvgStats('30days', document.querySelector('[data-range="30days"]')); 
 </script>
 
 </body>
