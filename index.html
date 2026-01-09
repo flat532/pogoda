@@ -117,6 +117,10 @@
                 <span class="navbar-brand mb-0 h1">🌤️ Gliwice</span>
             </div>
 
+            <div id="dstInfo" class="text-white text-center d-none d-lg-block" style="font-size: 0.9rem;">
+                <span id="dstMessage" class="fw-bold">--</span>
+            </div>
+
             <div class="text-white text-end live-data d-none d-md-block">
                 <span>🌡️ <span id="navTemp">--</span></span>
                 <span>💧 <span id="navHum">--</span></span>
@@ -746,7 +750,70 @@
         loadData();
         // Inicjalizacja domyślnego widoku średniej (Dziś)
         // Znajdź przycisk Dziś i symuluj kliknięcie lub wywołaj bezpośrednio
-        loadAvgStats('today', document.querySelector('[data-range="today"]')); 
+        loadAvgStats('today', document.querySelector('[data-range="today"]'));
+
+        // --- ZMIANA CZASU (DST) ---
+        function getNextDSTChange() {
+            const now = new Date();
+            let currentYear = now.getFullYear();
+
+            // Definicje zmian czasu (EU: Ostatnia niedziela Marca i Października)
+            // Zmiana na letni: Marzec, 2:00 -> 3:00
+            // Zmiana na zimowy: Październik, 3:00 -> 2:00
+
+            // Szukamy najbliższej zmiany w tym lub następnym roku
+            for (let year = currentYear; year <= currentYear + 1; year++) {
+                // Oblicz datę zmiany na letni (Marzec)
+                let summerDate = new Date(year, 2, 31); // 31 Marzec
+                let day = summerDate.getDay();
+                // Cofamy się do ostatniej niedzieli
+                summerDate.setDate(31 - day);
+                summerDate.setHours(2, 0, 0, 0); // 2:00
+
+                // Oblicz datę zmiany na zimowy (Październik)
+                let winterDate = new Date(year, 9, 31); // 31 Październik
+                day = winterDate.getDay();
+                winterDate.setDate(31 - day);
+                winterDate.setHours(3, 0, 0, 0); // 3:00
+
+                if (summerDate > now) {
+                    return { date: summerDate, type: 'letni' }; // Najbliższa to zmiana na letni
+                }
+                if (winterDate > now) {
+                    return { date: winterDate, type: 'zimowy' }; // Najbliższa to zmiana na zimowy
+                }
+            }
+            return null; // Nie powinno wystąpić
+        }
+
+        function updateDSTCountdown() {
+            const nextChange = getNextDSTChange();
+            if (!nextChange) return;
+
+            const now = new Date();
+            const diffMs = nextChange.date - now;
+
+            if (diffMs <= 0) {
+                // Jeśli dobiło do zera, odśwież (może przełączyć się na kolejny)
+                setTimeout(updateDSTCountdown, 1000);
+                return;
+            }
+
+            const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+            const typeLabel = nextChange.type === 'letni' ? 'letni' : 'zimowy';
+            const html = `Do zmiany na czas ${typeLabel}: <span style="font-weight: 800; color: #ffeb3b;">${days} dni, ${hours} godz, ${minutes} min</span>`;
+
+            const el = document.getElementById('dstMessage');
+            if (el) el.innerHTML = html;
+        }
+
+        // Start licznika
+        setInterval(updateDSTCountdown, 1000);
+        updateDSTCountdown(); // Pierwsze wywołanie bez opóźnienia
     </script>
 
 </body>
