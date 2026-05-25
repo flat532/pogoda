@@ -3,7 +3,7 @@
 # Tablica z listą katalogów, które mają być przetwarzane
 BASE_DIRS=(
     "/home/srv55800/domains/flat532.pl/public_html/dubaj/archive"
-    "/home/srv55800/domains/drugapredkosc.pl/public_htmlwq/archive"
+    "/home/srv55800/domains/drugapredkosc.pl/public_html/archive"
 )
 
 for ARCHIVE_DIR in "${BASE_DIRS[@]}"; do
