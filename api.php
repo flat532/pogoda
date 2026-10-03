@@ -179,6 +179,9 @@ try {
     }
 
 } catch (PDOException $e) {
-    echo json_encode(['error' => $e->getMessage()]);
+    // Szczegóły tylko do logu serwera — nie ujawniamy ich klientowi
+    error_log('api.php: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['error' => 'Błąd bazy danych']);
 }
 ?>
