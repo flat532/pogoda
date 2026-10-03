@@ -28,6 +28,10 @@ if (!empty($data) && $data !== 'null') {
     if (!is_dir('archive')) { mkdir('archive', 0755, true); }
     
     $filename = "archive/{$location}-{$date}.json";
+    // Przy zmianie na czas zimowy godzina 02:00 występuje dwa razy — nie nadpisuj pierwszego pliku
+    if (file_exists($filename)) {
+        $filename = "archive/{$location}-{$date}-" . date('T') . ".json";
+    }
     file_put_contents($filename, $data);
     echo "✅ Saved data to file: {$filename}<br>";
 
