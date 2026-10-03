@@ -15,23 +15,22 @@ for ARCHIVE_DIR in "${BASE_DIRS[@]}"; do
         mkdir -p "$OLD_DIR"
     fi
 
-    # Znalezienie plików starszych niż 24 godziny (1440 minut) i zliczenie ich, wykluczając katalog docelowy
-    file_count=$(find "$ARCHIVE_DIR" -type f -mmin +1440 -not -path "$OLD_DIR/*" | wc -l)
+    # Przeniesienie plików starszych niż 24 godziny (1440 minut) do katalogu /archive/old
+    find "$ARCHIVE_DIR" -type f -mmin +1440 -not -path "$OLD_DIR/*" -exec mv -t "$OLD_DIR" {} +
 
-    if [ $file_count -eq 0 ]; then
+    # Lista plików do zarchiwizowania (wszystko w OLD_DIR poza samym archiwum)
+    FILES=$(find "$OLD_DIR" -maxdepth 1 -type f ! -name "$ARCHIVE_FILE" -printf '%f\n')
+
+    if [ -z "$FILES" ]; then
         echo "Brak plików starszych niż 24 godziny w $ARCHIVE_DIR"
-    else
-        # Przeniesienie plików starszych niż 24 godziny do katalogu /archive/old i wypisanie komunikatu
-        find "$ARCHIVE_DIR" -type f -mmin +1440 -not -path "$OLD_DIR/*" -exec mv "{}" "$OLD_DIR" \;
+        continue
+    fi
 
-        # Sprawdzenie, czy plik old.tar istnieje
-        if [ -f "$OLD_DIR/$ARCHIVE_FILE" ]; then
-            # Jeśli istnieje, dodaj pliki do archiwum, wykluczając plik old.tar
-            find "$OLD_DIR" -type f ! -name "$ARCHIVE_FILE" -exec tar --append -f "$OLD_DIR/$ARCHIVE_FILE" "{}" \; -exec rm "{}" \;
-        else
-            # Jeśli nie istnieje, utwórz nowe archiwum, wykluczając plik old.tar
-            tar -cvf "$OLD_DIR/$ARCHIVE_FILE" -C "$OLD_DIR" --exclude "$ARCHIVE_FILE" .
-            find "$OLD_DIR" -type f ! -name "$ARCHIVE_FILE" -exec rm "{}" \;
-        fi
+    # Jedno wywołanie tar dla całej paczki (--append tworzy archiwum, jeśli nie istnieje);
+    # pliki usuwamy tylko po udanym dopisaniu
+    if printf '%s\n' "$FILES" | tar --append -f "$OLD_DIR/$ARCHIVE_FILE" -C "$OLD_DIR" -T -; then
+        printf '%s\n' "$FILES" | (cd "$OLD_DIR" && xargs rm -f --)
+    else
+        echo "BŁĄD: nie udało się dopisać plików do $OLD_DIR/$ARCHIVE_FILE" >&2
     fi
 done
