@@ -1,4 +1,10 @@
 <?php
+// Tylko z crona (CLI) — blokada wywołań przez WWW
+if (PHP_SAPI !== 'cli') {
+    http_response_code(403);
+    exit;
+}
+
 chdir(__DIR__);
 
 // Wczytanie konfiguracji

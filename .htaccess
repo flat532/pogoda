@@ -1,0 +1,6 @@
+Redirect 301 /vod http://91.193.211.232:1234/
+
+# Pliki uruchamiane tylko z CLI/crona lub dołączane przez PHP — bez dostępu z WWW
+<FilesMatch "^(update_data\.php|config\.php|arch\.sh|index\.backup\.html)$">
+    Require all denied
+</FilesMatch>
