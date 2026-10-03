@@ -1202,20 +1202,20 @@
         setInterval(loadCurrentStatus, 5 * 60 * 1000);
 
         // --- ZMIANA CZASU (DST) ---
+        // W UE czas zmienia się w ostatnią niedzielę marca i października o 01:00 UTC
+        function lastSundayUTC(year, month) {
+            const d = new Date(Date.UTC(year, month + 1, 0, 1)); // ostatni dzień miesiąca, 01:00 UTC
+            d.setUTCDate(d.getUTCDate() - d.getUTCDay());
+            return d;
+        }
+
         function getNextDSTChange() {
             const now = new Date();
-            let currentYear = now.getFullYear();
+            const currentYear = now.getUTCFullYear();
 
             for (let year = currentYear; year <= currentYear + 1; year++) {
-                let summerDate = new Date(year, 2, 31);
-                let day = summerDate.getDay();
-                summerDate.setDate(31 - day);
-                summerDate.setHours(2, 0, 0, 0);
-
-                let winterDate = new Date(year, 9, 31);
-                day = winterDate.getDay();
-                winterDate.setDate(31 - day);
-                winterDate.setHours(3, 0, 0, 0);
+                const summerDate = lastSundayUTC(year, 2);
+                const winterDate = lastSundayUTC(year, 9);
 
                 if (summerDate > now) return { date: summerDate, type: 'letni' };
                 if (winterDate > now) return { date: winterDate, type: 'zimowy' };
