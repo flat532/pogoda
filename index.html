@@ -5,330 +5,573 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stacja Pogodowa Gliwice</title>
+    <meta name="theme-color" content="#0a0f1c">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌤️</text></svg>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        :root {
+            --bg-0: #0a0f1c;
+            --card: #131b2b;
+            --card-hover: #162033;
+            --line: rgba(148, 163, 184, 0.12);
+            --line-soft: rgba(148, 163, 184, 0.07);
+            --ink-1: #e8eef7;
+            --ink-2: #a7b4c8;
+            --muted: #6b7891;
+            --accent: #3987e5;
+            --accent-soft: rgba(57, 135, 229, 0.16);
+            --c-max: #e66767;
+            --c-max-text: #ef8f8f;
+            --c-min: #3987e5;
+            --c-min-text: #6fa8f0;
+            --c-press: #199e70;
+            --c-avg: #c98500;
+            --radius: 16px;
+        }
+
         * { box-sizing: border-box; }
 
         body {
-            background: linear-gradient(135deg, #06080f 0%, #0d1520 45%, #111830 100%);
+            background:
+                radial-gradient(ellipse 55% 38% at 18% -5%, rgba(57, 135, 229, 0.13), transparent 70%),
+                radial-gradient(ellipse 45% 32% at 88% 0%, rgba(25, 158, 112, 0.09), transparent 70%),
+                var(--bg-0);
+            background-attachment: fixed;
             min-height: 100vh;
             font-size: 0.9rem;
             font-family: 'Inter', 'Segoe UI', sans-serif;
-            color: #c8d8e8;
+            color: var(--ink-2);
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* === GLASSMORPHISM CARDS === */
-        .card {
-            margin-bottom: 15px;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.09);
+        /* === TOPBAR === */
+        .topbar {
+            background: rgba(10, 15, 28, 0.82);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-bottom: 1px solid var(--line-soft);
+            padding: 0.65rem 0;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--ink-1);
+            font-weight: 700;
+            font-size: 1.02rem;
+            letter-spacing: -0.2px;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .brand-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(57, 135, 229, 0.35), rgba(25, 158, 112, 0.25));
+            border: 1px solid var(--line);
+            display: grid;
+            place-items: center;
+            font-size: 1.05rem;
+        }
+
+        .brand small {
+            display: block;
+            font-size: 0.66rem;
+            font-weight: 500;
+            color: var(--muted);
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+        }
+
+        .dst-note {
+            font-size: 0.8rem;
+            color: var(--ink-2);
+        }
+
+        .live-mini {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.045);
+            border: 1px solid var(--line-soft);
+            border-radius: 30px;
+            padding: 5px 14px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--ink-1);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .live-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #2fd882;
+            box-shadow: 0 0 0 0 rgba(47, 216, 130, 0.5);
+            animation: pulse 2.2s infinite;
+            flex: 0 0 auto;
+        }
+
+        @keyframes pulse {
+            0%   { box-shadow: 0 0 0 0 rgba(47, 216, 130, 0.45); }
+            70%  { box-shadow: 0 0 0 7px rgba(47, 216, 130, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(47, 216, 130, 0); }
+        }
+
+        .live-mini .sep { color: var(--muted); font-weight: 400; }
+        .live-mini small { color: var(--muted); font-weight: 500; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .live-dot { animation: none; }
+        }
+
+        /* === HERO === */
+        .hero {
+            background: linear-gradient(160deg, #16233c 0%, #121b2e 55%, #12202c 100%);
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            padding: 1.6rem 1.8rem;
+            margin: 1.25rem 0 1.5rem;
+            box-shadow: 0 20px 50px -25px rgba(0, 0, 0, 0.7);
+        }
+
+        .hero-grid {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+
+        .hero-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 1.4px;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .hero-temp {
+            font-size: clamp(3rem, 8vw, 4.4rem);
+            font-weight: 800;
+            letter-spacing: -2.5px;
+            line-height: 1.05;
+            color: var(--ink-1);
+        }
+
+        .hero-sub {
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .hero-tiles {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .tile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.045);
+            border: 1px solid var(--line-soft);
             border-radius: 14px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-            transition: box-shadow 0.2s;
+            padding: 14px 18px;
+            min-width: 160px;
         }
 
-        .card:hover {
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        .tile-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 11px;
+            display: grid;
+            place-items: center;
+            flex: 0 0 auto;
         }
+
+        .tile-icon svg { width: 19px; height: 19px; }
+        .tile-icon.i-hum   { background: rgba(57, 135, 229, 0.16); color: #6fa8f0; }
+        .tile-icon.i-press { background: rgba(25, 158, 112, 0.16); color: #35c791; }
+
+        .tile-val {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--ink-1);
+            line-height: 1.15;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .tile-label {
+            font-size: 0.68rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.9px;
+        }
+
+        /* Historical comparison note */
+        .hist-note {
+            margin-top: 1.1rem;
+            padding: 0.6rem 1rem;
+            border-radius: 10px;
+            background: var(--accent-soft);
+            border: 1px solid rgba(57, 135, 229, 0.3);
+            color: #9cc4f5;
+            font-size: 0.85rem;
+        }
+
+        .hist-note strong { color: #cde2fb; }
+
+        /* === CARDS === */
+        .card {
+            margin-bottom: 16px;
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            box-shadow: 0 14px 34px -22px rgba(0, 0, 0, 0.65);
+            transition: border-color 0.2s;
+        }
+
+        .card:hover { border-color: rgba(148, 163, 184, 0.22); }
 
         .card-header {
-            background: rgba(255, 255, 255, 0.04);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            background: transparent;
+            border-bottom: 1px solid var(--line-soft);
+            border-radius: var(--radius) var(--radius) 0 0 !important;
+            padding: 0.75rem 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
             font-weight: 600;
-            font-size: 0.85rem;
-            color: #8aaac8;
-            border-radius: 14px 14px 0 0 !important;
-            padding: 0.7rem 1rem;
-            letter-spacing: 0.2px;
+            font-size: 0.78rem;
+            color: var(--ink-2);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
         }
 
-        .card-body { color: #c8d8e8; }
-
-        /* === NAVBAR === */
-        .navbar {
-            background: rgba(6, 8, 15, 0.88) !important;
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-            padding: 0.6rem 0;
+        .card-header svg {
+            width: 15px;
+            height: 15px;
+            color: var(--accent);
+            flex: 0 0 auto;
         }
 
-        .navbar-brand {
-            font-size: 1.15rem;
-            font-weight: 700;
-            letter-spacing: -0.3px;
-            color: #e0eeff !important;
-        }
+        .card-body { color: var(--ink-2); }
 
         /* === STAT VALUES === */
         .stat-val {
-            font-size: 1.65rem;
+            font-size: 1.8rem;
             font-weight: 700;
-            letter-spacing: -0.8px;
+            letter-spacing: -1px;
+            font-variant-numeric: tabular-nums;
         }
 
+        .stat-max { color: var(--c-max-text); }
+        .stat-min { color: var(--c-min-text); }
+
         .stat-label {
-            font-size: 0.68rem;
-            color: #5a7890;
+            font-size: 0.66rem;
+            color: var(--muted);
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.1px;
             margin-top: 3px;
         }
 
         /* === CHARTS === */
-        .chart-wrapper {
-            position: relative;
-            height: 180px;
-            width: 100%;
+        .chart-wrapper { position: relative; height: 200px; width: 100%; }
+        .year-chart-wrapper { position: relative; height: 250px; width: 100%; }
+
+        /* === DATE CONTROLS === */
+        .date-controls { display: flex; gap: 8px; }
+
+        .btn-day {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--line);
+            color: var(--ink-2);
+            border-radius: 10px;
+            width: 40px;
+            flex: 0 0 auto;
+            font-weight: 700;
+            transition: background 0.15s, color 0.15s;
         }
 
-        .year-chart-wrapper {
-            position: relative;
-            height: 250px;
-            width: 100%;
+        .btn-day:hover { background: rgba(255, 255, 255, 0.1); color: var(--ink-1); }
+
+        .form-control {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--line);
+            color: var(--ink-1);
+            border-radius: 10px;
+            font-variant-numeric: tabular-nums;
         }
 
-        /* === TABLE === */
-        .table-month td,
-        .table-month th {
-            padding: 0.3rem 0.4rem;
-            font-size: 0.72rem;
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(57, 135, 229, 0.6);
+            color: #fff;
+            box-shadow: 0 0 0 3px rgba(57, 135, 229, 0.18);
         }
 
-        .table { color: #b0c8d8; }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.65); cursor: pointer; }
 
-        .table-month tbody tr:nth-child(odd) td {
-            background-color: rgba(255, 255, 255, 0.05) !important;
-        }
-
-        .table-month tbody tr:nth-child(even) td {
-            background-color: transparent !important;
-        }
-
-        .table-hover > tbody > tr:hover > * {
-            background-color: rgba(255, 255, 255, 0.07);
-            color: #e0eeff;
-        }
-
-        .thead-glass th {
-            background: rgba(0, 5, 15, 0.75) !important;
-            color: #5a7890 !important;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-            font-size: 0.72rem;
+        .form-label {
+            color: var(--muted);
+            font-size: 0.68rem;
+            letter-spacing: 1px;
             text-transform: uppercase;
-            letter-spacing: 0.6px;
-            position: sticky;
-            top: 0;
-            z-index: 1;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            border: 1px solid var(--accent);
+            font-weight: 600;
+            border-radius: 10px;
+        }
+
+        .btn-primary:hover, .btn-primary:focus {
+            background: #4f96ee;
+            border-color: #4f96ee;
+        }
+
+        /* === LIST GROUP (day details) === */
+        .list-group-item {
+            background: transparent;
+            border-color: var(--line-soft);
+            color: var(--ink-2);
+            padding: 0.6rem 0;
+            font-size: 0.86rem;
+        }
+
+        .list-group-item strong { color: var(--ink-1); font-variant-numeric: tabular-nums; }
+        .list-group-item .text-muted { color: var(--muted) !important; }
+
+        .border-end { border-color: var(--line-soft) !important; }
+        .border-bottom { border-color: var(--line-soft) !important; }
+
+        /* === NAV PILLS (segmented) === */
+        .nav-pills {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--line-soft);
+            border-radius: 9px;
+            padding: 3px;
+            gap: 2px;
+        }
+
+        .nav-pills .nav-link {
+            color: var(--muted);
+            font-size: 0.74rem;
+            font-weight: 600;
+            border-radius: 7px;
+            padding: 3px 10px !important;
+            letter-spacing: 0;
+            text-transform: none;
+        }
+
+        .nav-pills .nav-link.active {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .nav-pills .nav-link:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.07);
+            color: var(--ink-2);
         }
 
         /* === RECORD TILES === */
         .record-tile {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.07);
-            border-radius: 10px;
-            padding: 10px;
+            background: rgba(255, 255, 255, 0.035);
+            border: 1px solid var(--line-soft);
+            border-radius: 12px;
+            padding: 12px;
             height: 100%;
-            transition: background 0.2s;
         }
 
-        .record-tile:hover { background: rgba(255, 255, 255, 0.08); }
-
         .record-title {
-            font-size: 0.68rem;
+            font-size: 0.66rem;
             font-weight: 600;
-            color: #5a7890;
+            color: var(--muted);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
+            letter-spacing: 0.8px;
+            margin-bottom: 10px;
             text-align: center;
         }
 
         .record-val {
             font-weight: 700;
             font-size: 1.05rem;
-            color: #ddeeff !important;
+            color: var(--ink-1);
+            font-variant-numeric: tabular-nums;
         }
 
         .record-date {
             font-size: 0.68rem;
-            color: #f0c040;
+            color: var(--muted);
             display: block;
-            line-height: 1.2;
-            margin-top: 4px;
-            font-style: italic;
+            line-height: 1.25;
+            margin-top: 3px;
         }
 
-        /* === NAVBAR LIVE DATA === */
-        .live-data span {
-            margin-left: 15px;
-            font-weight: 500;
-            font-size: 0.95rem;
-        }
-
-        .live-data strong {
+        .rec-badge {
+            font-size: 0.6rem;
             font-weight: 700;
-            font-size: 1.1rem;
-        }
-
-        .live-time {
-            font-size: 0.72rem;
-            opacity: 0.5;
-            display: block;
-            text-align: right;
-            margin-top: -2px;
-        }
-
-        /* === FORM CONTROLS === */
-        .form-control {
-            background: rgba(255, 255, 255, 0.07);
-            border: 1px solid rgba(255, 255, 255, 0.13);
-            color: #d0e0f0;
-            border-radius: 8px;
-        }
-
-        .form-control:focus {
-            background: rgba(255, 255, 255, 0.11);
-            border-color: rgba(80, 140, 220, 0.6);
-            color: #fff;
-            box-shadow: 0 0 0 3px rgba(80, 140, 220, 0.15);
-        }
-
-        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); }
-
-        .form-label {
-            color: #5a7890;
-            font-size: 0.72rem;
-            letter-spacing: 0.7px;
-            text-transform: uppercase;
-        }
-
-        /* === LIST GROUP === */
-        .list-group-item {
-            background: transparent;
-            border-color: rgba(255, 255, 255, 0.06);
-            color: #a0b8c8;
-            padding: 0.6rem 0;
-        }
-
-        .list-group-item strong { color: #ddeeff; }
-        .list-group-item .text-muted { color: #3d5868 !important; }
-
-        /* === BORDERS === */
-        .border-end { border-color: rgba(255, 255, 255, 0.08) !important; }
-        .border-bottom { border-color: rgba(255, 255, 255, 0.08) !important; }
-
-        /* === ACCENT BORDERS === */
-        .card.border-primary { border-left: 3px solid rgba(60, 120, 220, 0.7) !important; }
-        .card.border-warning  { border-left: 3px solid rgba(240, 180, 40, 0.7) !important; }
-
-        /* === HISTORICAL BANNER === */
-        .alert-info {
-            background: rgba(30, 80, 160, 0.18);
-            border: 1px solid rgba(60, 120, 220, 0.28);
-            color: #80b8f0;
-            border-radius: 10px;
-        }
-
-        /* === NAV PILLS === */
-        .nav-pills .nav-link {
-            color: #5a7890;
-            font-size: 0.78rem;
+            letter-spacing: 0.6px;
+            padding: 2px 7px;
             border-radius: 6px;
         }
 
-        .nav-pills .nav-link.active {
-            background: rgba(60, 120, 220, 0.45);
-            color: #ddeeff;
+        .rec-max   { background: rgba(230, 103, 103, 0.16); color: var(--c-max-text); }
+        .rec-min   { background: rgba(57, 135, 229, 0.16);  color: var(--c-min-text); }
+        .rec-neutral { background: rgba(148, 163, 184, 0.14); color: var(--ink-2); }
+
+        /* === MONTH TABLE === */
+        .table-month td, .table-month th {
+            padding: 0.34rem 0.45rem;
+            font-size: 0.73rem;
         }
 
-        .nav-pills .nav-link:hover:not(.active) {
-            background: rgba(255, 255, 255, 0.07);
-            color: #b0c8d8;
+        .table { color: var(--ink-2); }
+        .table td { font-variant-numeric: tabular-nums; }
+
+        .table-month tbody tr:nth-child(odd) td { background-color: rgba(255, 255, 255, 0.03) !important; }
+        .table-month tbody tr:nth-child(even) td { background-color: transparent !important; }
+
+        .table-hover > tbody > tr:hover > * {
+            background-color: rgba(57, 135, 229, 0.1) !important;
+            color: var(--ink-1);
         }
 
-        /* === BUTTON === */
-        .btn-primary {
-            background: rgba(60, 120, 220, 0.55);
-            border: 1px solid rgba(60, 120, 220, 0.4);
-            font-weight: 600;
+        .thead-glass th {
+            background: #101726 !important;
+            color: var(--muted) !important;
+            border-bottom: 1px solid var(--line) !important;
+            font-size: 0.66rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            position: sticky;
+            top: 0;
+            z-index: 1;
         }
 
-        .btn-primary:hover {
-            background: rgba(60, 120, 220, 0.75);
-            border-color: rgba(60, 120, 220, 0.6);
+        /* === FOOTER === */
+        .footer {
+            text-align: center;
+            font-size: 0.74rem;
+            color: var(--muted);
+            padding: 1.5rem 0 0.5rem;
+            border-top: 1px solid var(--line-soft);
+            margin-top: 0.5rem;
         }
 
         /* === SCROLLBAR === */
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
-
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.2); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.35); }
         .table-responsive { scrollbar-width: thin; }
+
+        @media (max-width: 576px) {
+            .hero { padding: 1.2rem 1.1rem; }
+            .hero-tiles { width: 100%; }
+            .tile { flex: 1; min-width: 130px; padding: 11px 13px; }
+            .live-mini { padding: 4px 10px; font-size: 0.76rem; }
+        }
     </style>
 </head>
 
 <body>
 
-    <nav class="navbar navbar-dark mb-3 sticky-top">
-        <div class="container-fluid d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-                <span class="navbar-brand mb-0 h1">🌤️ Gliwice</span>
+    <nav class="topbar sticky-top">
+        <div class="container-fluid px-3 px-md-4 d-flex justify-content-between align-items-center gap-3">
+            <a class="brand" href="/">
+                <span class="brand-icon">🌤️</span>
+                <span>Stacja Pogodowa<small>Gliwice · na żywo</small></span>
+            </a>
+
+            <div id="dstInfo" class="dst-note text-center d-none d-lg-block">
+                <span id="dstMessage" class="fw-semibold">--</span>
             </div>
 
-            <div id="dstInfo" class="text-white text-center d-none d-lg-block" style="font-size: 0.9rem;">
-                <span id="dstMessage" class="fw-bold">--</span>
-            </div>
-
-            <div class="text-white text-end live-data d-none d-md-block">
-                <span>🌡️ <span id="navTemp">--</span></span>
-                <span>💧 <span id="navHum">--</span></span>
-                <span>⏲️ <span id="navPress">--</span></span>
-                <small class="live-time" id="navTime">--:--</small>
-            </div>
-
-            <div class="text-white text-end live-data d-block d-md-none" style="font-size: 0.8rem;">
-                <div><span id="navTempMobile">--</span> | <span id="navHumMobile">--</span></div>
-                <div style="font-size: 0.7rem; opacity: 0.6" id="navTimeMobile">--:--</div>
+            <div class="live-mini">
+                <span class="live-dot" aria-hidden="true"></span>
+                <span id="navTempMobile">--</span>
+                <span class="sep">·</span>
+                <span id="navHumMobile">--</span>
+                <small class="d-none d-sm-inline" id="navTimeMobile">--:--</small>
             </div>
         </div>
     </nav>
 
-    <div class="container-fluid px-4 pb-5">
+    <div class="container-fluid px-3 px-md-4 pb-4">
 
-        <!-- Baner z porównaniem historycznym -->
-        <div id="historicalInfo" class="alert alert-info d-none mb-3 py-2 text-center"
-            style="font-size: 0.9rem;" role="alert"></div>
+        <!-- === HERO: aktualne warunki === -->
+        <section class="hero">
+            <div class="hero-grid">
+                <div class="hero-now">
+                    <div class="hero-label"><span class="live-dot" aria-hidden="true"></span> Teraz w Gliwicach</div>
+                    <div class="hero-temp" id="navTemp">--</div>
+                    <div class="hero-sub" id="navTime">--:--</div>
+                </div>
+                <div class="hero-tiles">
+                    <div class="tile">
+                        <span class="tile-icon i-hum" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.7 6.6 9.2a7 7 0 1 0 10.8 0Z"/></svg>
+                        </span>
+                        <div>
+                            <div class="tile-val" id="navHum">--</div>
+                            <div class="tile-label">Wilgotność</div>
+                        </div>
+                    </div>
+                    <div class="tile">
+                        <span class="tile-icon i-press" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="m12 13 3.5-3.5"/><path d="M12 5V3"/></svg>
+                        </span>
+                        <div>
+                            <div class="tile-val" id="navPress">--</div>
+                            <div class="tile-label">Ciśnienie</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Baner z porównaniem historycznym -->
+            <div id="historicalInfo" class="hist-note d-none" role="alert"></div>
+        </section>
 
         <div class="row">
 
             <div class="col-lg-4">
                 <div class="card">
+                    <div class="card-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                        Wybrany dzień
+                    </div>
                     <div class="card-body">
-                        <label class="form-label">WYBIERZ DZIEŃ</label>
-                        <div class="input-group">
+                        <div class="date-controls mb-3">
+                            <button class="btn btn-day" type="button" onclick="shiftDay(-1)" aria-label="Poprzedni dzień">‹</button>
                             <input type="date" id="datePicker" class="form-control">
+                            <button class="btn btn-day" type="button" onclick="shiftDay(1)" aria-label="Następny dzień">›</button>
                             <button class="btn btn-primary" onclick="loadData()">Pokaż</button>
                         </div>
-                    </div>
-                </div>
 
-                <div class="card">
-                    <div class="card-header">Wybrany Dzień</div>
-                    <div class="card-body">
                         <div class="row text-center mb-3">
                             <div class="col-6 border-end">
-                                <div class="text-danger stat-val" id="dayMax">--</div>
-                                <div class="stat-label">Max Temp</div>
+                                <div class="stat-val stat-max" id="dayMax">--</div>
+                                <div class="stat-label">Max temp</div>
                             </div>
                             <div class="col-6">
-                                <div class="stat-val" style="color:#4da6ff" id="dayMin">--</div>
-                                <div class="stat-label">Min Temp</div>
+                                <div class="stat-val stat-min" id="dayMin">--</div>
+                                <div class="stat-label">Min temp</div>
                             </div>
                         </div>
                         <ul class="list-group list-group-flush">
@@ -348,7 +591,10 @@
 
             <div class="col-lg-4">
                 <div class="card">
-                    <div class="card-header" id="tempHeader">🌡️ Temperatura</div>
+                    <div class="card-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4a2 2 0 1 0-4 0v10.5a4 4 0 1 0 4 0Z"/></svg>
+                        <span id="tempHeader">Temperatura</span>
+                    </div>
                     <div class="card-body">
                         <div class="chart-wrapper">
                             <canvas id="tempChart"></canvas>
@@ -357,7 +603,10 @@
                 </div>
 
                 <div class="card">
-                    <div class="card-header" id="pressHeader">⏲️ Ciśnienie</div>
+                    <div class="card-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="m12 13 3.5-3.5"/><path d="M12 5V3"/></svg>
+                        <span id="pressHeader">Ciśnienie</span>
+                    </div>
                     <div class="card-body">
                         <div class="chart-wrapper">
                             <canvas id="pressChart"></canvas>
@@ -369,27 +618,27 @@
             <div class="col-lg-4">
 
                 <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span>Rekordy</span>
+                    <div class="card-header justify-content-between">
+                        <span class="d-flex align-items-center gap-2">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M17 5h3a1 1 0 0 1 1 1 5 5 0 0 1-5 5M7 5H4a1 1 0 0 0-1 1 5 5 0 0 0 5 5"/><path d="M17 3H7v6a5 5 0 0 0 10 0Z"/></svg>
+                            Rekordy
+                        </span>
                         <ul class="nav nav-pills card-header-pills" id="recordsTab" role="tablist">
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link active py-0 px-2" id="curr-year-tab" data-bs-toggle="tab"
-                                    data-bs-target="#curr-year-pane" type="button" role="tab"
-                                    style="font-size: 0.78rem;">
+                                    data-bs-target="#curr-year-pane" type="button" role="tab">
                                     <span id="labelCurrYear">Current</span>
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation" id="prev-year-tab-item">
                                 <button class="nav-link py-0 px-2" id="prev-year-tab" data-bs-toggle="tab"
-                                    data-bs-target="#prev-year-pane" type="button" role="tab"
-                                    style="font-size: 0.78rem;">
+                                    data-bs-target="#prev-year-pane" type="button" role="tab">
                                     <span id="labelPrevYear">Prev</span>
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation" id="past-year-tab-item">
                                 <button class="nav-link py-0 px-2" id="past-year-tab" data-bs-toggle="tab"
-                                    data-bs-target="#past-year-pane" type="button" role="tab"
-                                    style="font-size: 0.78rem;">
+                                    data-bs-target="#past-year-pane" type="button" role="tab">
                                     <span id="labelPastYear">Past</span>
                                 </button>
                             </li>
@@ -402,16 +651,16 @@
                                 <div class="row g-2">
                                     <div class="col-6">
                                         <div class="record-tile">
-                                            <div class="record-title">🌡️ Temp (<span id="titleCurrYear">--</span>)</div>
+                                            <div class="record-title">Temperatura (<span id="titleCurrYear">--</span>)</div>
                                             <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
-                                                <span class="badge bg-danger p-1" style="font-size: 0.6rem;">MAX</span>
+                                                <span class="rec-badge rec-max">MAX</span>
                                                 <div class="text-end lh-1">
                                                     <div class="record-val" id="currYearMax">--</div>
                                                     <span class="record-date" id="currYearMaxDate">--</span>
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center">
-                                                <span class="badge bg-primary p-1" style="font-size: 0.6rem;">MIN</span>
+                                                <span class="rec-badge rec-min">MIN</span>
                                                 <div class="text-end lh-1">
                                                     <div class="record-val" id="currYearMin">--</div>
                                                     <span class="record-date" id="currYearMinDate">--</span>
@@ -421,16 +670,16 @@
                                     </div>
                                     <div class="col-6">
                                         <div class="record-tile">
-                                            <div class="record-title">⏲️ Ciśnienie</div>
+                                            <div class="record-title">Ciśnienie [hPa]</div>
                                             <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
-                                                <span class="badge bg-secondary p-1" style="font-size: 0.6rem;">MAX</span>
+                                                <span class="rec-badge rec-neutral">MAX</span>
                                                 <div class="text-end lh-1">
                                                     <div class="record-val" id="currYearMaxPress">--</div>
                                                     <span class="record-date" id="currYearMaxPressDate">--</span>
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center">
-                                                <span class="badge bg-secondary p-1" style="font-size: 0.6rem; opacity: 0.7">MIN</span>
+                                                <span class="rec-badge rec-neutral" style="opacity:0.75">MIN</span>
                                                 <div class="text-end lh-1">
                                                     <div class="record-val" id="currYearMinPress">--</div>
                                                     <span class="record-date" id="currYearMinPressDate">--</span>
@@ -445,16 +694,16 @@
                                 <div class="row g-2">
                                     <div class="col-6">
                                         <div class="record-tile">
-                                            <div class="record-title">🌡️ Temp (<span id="titlePrevYear">--</span>)</div>
+                                            <div class="record-title">Temperatura (<span id="titlePrevYear">--</span>)</div>
                                             <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
-                                                <span class="badge bg-danger p-1" style="font-size: 0.6rem;">MAX</span>
+                                                <span class="rec-badge rec-max">MAX</span>
                                                 <div class="text-end lh-1">
                                                     <div class="record-val" id="prevYearMax">--</div>
                                                     <span class="record-date" id="prevYearMaxDate">--</span>
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center">
-                                                <span class="badge bg-primary p-1" style="font-size: 0.6rem;">MIN</span>
+                                                <span class="rec-badge rec-min">MIN</span>
                                                 <div class="text-end lh-1">
                                                     <div class="record-val" id="prevYearMin">--</div>
                                                     <span class="record-date" id="prevYearMinDate">--</span>
@@ -464,16 +713,16 @@
                                     </div>
                                     <div class="col-6">
                                         <div class="record-tile">
-                                            <div class="record-title">⏲️ Ciśnienie</div>
+                                            <div class="record-title">Ciśnienie [hPa]</div>
                                             <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
-                                                <span class="badge bg-secondary p-1" style="font-size: 0.6rem;">MAX</span>
+                                                <span class="rec-badge rec-neutral">MAX</span>
                                                 <div class="text-end lh-1">
                                                     <div class="record-val" id="prevYearMaxPress">--</div>
                                                     <span class="record-date" id="prevYearMaxPressDate">--</span>
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center">
-                                                <span class="badge bg-secondary p-1" style="font-size: 0.6rem; opacity: 0.7">MIN</span>
+                                                <span class="rec-badge rec-neutral" style="opacity:0.75">MIN</span>
                                                 <div class="text-end lh-1">
                                                     <div class="record-val" id="prevYearMinPress">--</div>
                                                     <span class="record-date" id="prevYearMinPressDate">--</span>
@@ -488,16 +737,16 @@
                                 <div class="row g-2">
                                     <div class="col-6">
                                         <div class="record-tile">
-                                            <div class="record-title">🌡️ Temp (<span id="titlePastYear">--</span>)</div>
+                                            <div class="record-title">Temperatura (<span id="titlePastYear">--</span>)</div>
                                             <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
-                                                <span class="badge bg-danger p-1" style="font-size: 0.6rem;">MAX</span>
+                                                <span class="rec-badge rec-max">MAX</span>
                                                 <div class="text-end lh-1">
                                                     <div class="record-val" id="pastYearMax">--</div>
                                                     <span class="record-date" id="pastYearMaxDate">--</span>
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center">
-                                                <span class="badge bg-primary p-1" style="font-size: 0.6rem;">MIN</span>
+                                                <span class="rec-badge rec-min">MIN</span>
                                                 <div class="text-end lh-1">
                                                     <div class="record-val" id="pastYearMin">--</div>
                                                     <span class="record-date" id="pastYearMinDate">--</span>
@@ -507,16 +756,16 @@
                                     </div>
                                     <div class="col-6">
                                         <div class="record-tile">
-                                            <div class="record-title">⏲️ Ciśnienie</div>
+                                            <div class="record-title">Ciśnienie [hPa]</div>
                                             <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
-                                                <span class="badge bg-secondary p-1" style="font-size: 0.6rem;">MAX</span>
+                                                <span class="rec-badge rec-neutral">MAX</span>
                                                 <div class="text-end lh-1">
                                                     <div class="record-val" id="pastYearMaxPress">--</div>
                                                     <span class="record-date" id="pastYearMaxPressDate">--</span>
                                                 </div>
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center">
-                                                <span class="badge bg-secondary p-1" style="font-size: 0.6rem; opacity: 0.7">MIN</span>
+                                                <span class="rec-badge rec-neutral" style="opacity:0.75">MIN</span>
                                                 <div class="text-end lh-1">
                                                     <div class="record-val" id="pastYearMinPress">--</div>
                                                     <span class="record-date" id="pastYearMinPressDate">--</span>
@@ -532,10 +781,13 @@
                 </div>
 
                 <div class="card">
-                    <div class="card-header">📅 Przegląd Miesięcy</div>
+                    <div class="card-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                        Przegląd miesięcy
+                    </div>
                     <div class="card-body p-0">
                         <div class="row g-0">
-                            <div class="col-6" style="border-right: 1px solid rgba(255,255,255,0.06)">
+                            <div class="col-6" style="border-right: 1px solid var(--line-soft)">
                                 <table class="table table-hover table-month mb-0 text-center">
                                     <thead class="thead-glass">
                                         <tr><th>Miesiąc</th><th>Max</th><th>Min</th></tr>
@@ -557,12 +809,15 @@
             </div>
         </div>
 
-        <div class="row mt-2">
+        <div class="row mt-1">
             <div class="col-lg-6 mb-3">
                 <div class="card h-100">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span>📈 Trend Roczny (Min / Max)</span>
-                        <small style="color:#3d5868">Ostatnie 12 miesięcy</small>
+                    <div class="card-header justify-content-between">
+                        <span class="d-flex align-items-center gap-2">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
+                            Trend roczny (min / max)
+                        </span>
+                        <small style="color: var(--muted); text-transform: none; letter-spacing: 0;">Ostatnie 12 miesięcy</small>
                     </div>
                     <div class="card-body">
                         <div class="year-chart-wrapper" style="height: 300px;">
@@ -574,17 +829,20 @@
 
             <div class="col-lg-6 mb-3">
                 <div class="card h-100">
-                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
-                        <span>🌡️ Średnia Temperatura</span>
+                    <div class="card-header justify-content-between flex-wrap">
+                        <span class="d-flex align-items-center gap-2">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4a2 2 0 1 0-4 0v10.5a4 4 0 1 0 4 0Z"/></svg>
+                            Średnia temperatura
+                        </span>
                         <ul class="nav nav-pills card-header-pills mt-2 mt-md-0" id="avgTabs" role="tablist">
                             <li class="nav-item">
                                 <button class="nav-link py-0 px-2 active" onclick="loadAvgStats('today', this)" data-range="today">Dziś</button>
                             </li>
                             <li class="nav-item">
-                                <button class="nav-link py-0 px-2" onclick="loadAvgStats('30days', this)" data-range="30days">30 Dni</button>
+                                <button class="nav-link py-0 px-2" onclick="loadAvgStats('7days', this)" data-range="7days">7 dni</button>
                             </li>
                             <li class="nav-item">
-                                <button class="nav-link py-0 px-2" onclick="loadAvgStats('7days', this)" data-range="7days">7 Dni</button>
+                                <button class="nav-link py-0 px-2" onclick="loadAvgStats('30days', this)" data-range="30days">30 dni</button>
                             </li>
                             <li class="nav-item">
                                 <button class="nav-link py-0 px-2" onclick="loadAvgStats('month', this)" data-range="month">Ten msc</button>
@@ -609,14 +867,35 @@
             </div>
         </div>
 
+        <footer class="footer">
+            Stacja Pogodowa Gliwice · dane: OpenWeatherMap · odczyt automatyczny co godzinę
+        </footer>
+
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
         // Chart.js dark defaults
-        Chart.defaults.color = '#5a7890';
-        Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+        Chart.defaults.color = '#8a93a8';
+        Chart.defaults.borderColor = 'rgba(148, 163, 184, 0.08)';
+        Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
+        Chart.defaults.font.size = 11;
+        Object.assign(Chart.defaults.plugins.tooltip, {
+            backgroundColor: '#1a2336',
+            borderColor: 'rgba(148, 163, 184, 0.25)',
+            borderWidth: 1,
+            titleColor: '#e8eef7',
+            bodyColor: '#a7b4c8',
+            padding: 10,
+            cornerRadius: 8,
+            boxPadding: 4
+        });
+
+        const COLOR_MAX   = 'rgb(230, 103, 103)';   // #e66767
+        const COLOR_MIN   = 'rgb(57, 135, 229)';    // #3987e5
+        const COLOR_PRESS = 'rgb(25, 158, 112)';    // #199e70
+        const COLOR_AVG   = 'rgb(201, 133, 0)';     // #c98500
 
         let tempChartInstance = null;
         let pressChartInstance = null;
@@ -624,11 +903,26 @@
         let avgChartInstance = null;
 
         document.getElementById('datePicker').valueAsDate = new Date();
+        document.getElementById('datePicker').addEventListener('change', loadData);
+
+        function shiftDay(delta) {
+            const dp = document.getElementById('datePicker');
+            const d = dp.valueAsDate || new Date();
+            d.setDate(d.getDate() + delta);
+            dp.valueAsDate = d;
+            loadData();
+        }
 
         function formatPolishDate(dateStr) {
             if (!dateStr) return '-';
             const date = new Date(dateStr);
             return date.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long' });
+        }
+
+        function formatHeaderDate(dateStr) {
+            const d = new Date(dateStr);
+            if (isNaN(d)) return dateStr;
+            return d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' });
         }
 
         async function loadCurrentStatus() {
@@ -640,7 +934,7 @@
                     document.getElementById('navTemp').innerText = parseFloat(data.temperature).toFixed(1) + "°C";
                     document.getElementById('navHum').innerText = data.humidity + "%";
                     document.getElementById('navPress').innerText = data.pressure + " hPa";
-                    document.getElementById('navTime').innerText = "Ost. pomiar: " + data.measurement_datetime.substring(11, 16);
+                    document.getElementById('navTime').innerText = "Ostatni pomiar: " + data.measurement_datetime.substring(11, 16);
 
                     document.getElementById('navTempMobile').innerText = parseFloat(data.temperature).toFixed(1) + "°C";
                     document.getElementById('navHumMobile').innerText = data.humidity + "%";
@@ -673,8 +967,8 @@
         async function loadData() {
             const date = document.getElementById('datePicker').value;
 
-            document.getElementById('tempHeader').innerText = `🌡️ Temperatura (${date})`;
-            document.getElementById('pressHeader').innerText = `⏲️ Ciśnienie (${date})`;
+            document.getElementById('tempHeader').innerText = `Temperatura · ${formatHeaderDate(date)}`;
+            document.getElementById('pressHeader').innerText = `Ciśnienie · ${formatHeaderDate(date)}`;
 
             loadYearlyStats();
             loadYearlyTrend();
@@ -704,8 +998,8 @@
             document.getElementById('detWind').innerText = last.wind_speed + " m/s";
             document.getElementById('detRain').innerText = (parseFloat(last.rainfall) || 0) + " mm";
 
-            renderChart('tempChart', labels, temps, 'Temperatura', 'rgb(220, 53, 69)', tempChartInstance, (i) => tempChartInstance = i);
-            renderChart('pressChart', labels, presses, 'Ciśnienie', 'rgb(25, 135, 84)', pressChartInstance, (i) => pressChartInstance = i);
+            renderChart('tempChart', labels, temps, 'Temperatura', COLOR_MAX, tempChartInstance, (i) => tempChartInstance = i);
+            renderChart('pressChart', labels, presses, 'Ciśnienie', COLOR_PRESS, pressChartInstance, (i) => pressChartInstance = i);
         }
 
         async function loadYearlyTrend() {
@@ -726,13 +1020,13 @@
                     data: {
                         labels: labels,
                         datasets: [
-                            { label: 'Max Temp (°C)', data: maxTemps, borderColor: 'rgb(220, 53, 69)', backgroundColor: 'rgba(220, 53, 69, 0.1)', borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.4 },
-                            { label: 'Min Temp (°C)', data: minTemps, borderColor: 'rgb(13, 110, 253)', backgroundColor: 'rgba(13, 110, 253, 0.1)', borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.4 }
+                            { label: 'Max temp (°C)', data: maxTemps, borderColor: COLOR_MAX, backgroundColor: 'rgba(230, 103, 103, 0.08)', borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.4 },
+                            { label: 'Min temp (°C)', data: minTemps, borderColor: COLOR_MIN, backgroundColor: 'rgba(57, 135, 229, 0.08)', borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.4 }
                         ]
                     },
                     options: {
                         responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-                        plugins: { legend: { display: true, position: 'top' } },
+                        plugins: { legend: { display: true, position: 'top', labels: { usePointStyle: true, pointStyle: 'line', boxWidth: 24 } } },
                         scales: {
                             x: { display: true, grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 12, maxRotation: 0, callback: function (val) { const d = new Date(this.getLabelForValue(val)); return d.toLocaleDateString('pl-PL', { month: 'short' }); } } },
                             y: { display: true }
@@ -756,7 +1050,7 @@
                     const dateObj = new Date(row.month_id + "-01");
                     const monthName = dateObj.toLocaleDateString('pl-PL', { month: 'short', year: 'numeric' });
                     const formattedName = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-                    const tr = `<tr><td class="text-start fw-bold" style="color:#5a7890">${formattedName}</td><td class="text-danger fw-bold">${parseFloat(row.max_temp).toFixed(1)}°</td><td style="color:#4da6ff" class="fw-bold">${parseFloat(row.min_temp).toFixed(1)}°</td></tr>`;
+                    const tr = `<tr><td class="text-start fw-semibold" style="color:#8a93a8">${formattedName}</td><td class="fw-bold" style="color:#ef8f8f">${parseFloat(row.max_temp).toFixed(1)}°</td><td class="fw-bold" style="color:#6fa8f0">${parseFloat(row.min_temp).toFixed(1)}°</td></tr>`;
                     (idx < half ? leftBody : rightBody).innerHTML += tr;
                 });
             } catch (e) { }
@@ -811,14 +1105,25 @@
 
         function renderChart(canvasId, labels, data, label, color, oldInstance, setInstance) {
             if (oldInstance) oldInstance.destroy();
-            const ctx = document.getElementById(canvasId).getContext('2d');
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+
+            const grad = ctx.createLinearGradient(0, 0, 0, canvas.parentElement.clientHeight || 200);
+            grad.addColorStop(0, color.replace('rgb', 'rgba').replace(')', ', 0.25)'));
+            grad.addColorStop(1, color.replace('rgb', 'rgba').replace(')', ', 0)'));
+
             setInstance(new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [{ label: label, data: data, borderColor: color, backgroundColor: color.replace('rgb', 'rgba').replace(')', ', 0.1)'), borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, fill: true, tension: 0.4 }]
+                    datasets: [{ label: label, data: data, borderColor: color, backgroundColor: grad, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, fill: true, tension: 0.4 }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } } } }
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { display: false } },
+                    scales: { x: { grid: { display: false } } }
+                }
             }));
         }
 
@@ -851,18 +1156,23 @@
                 });
                 const values = data.map(e => parseFloat(e.avg_temp));
 
-                const ctx = document.getElementById('avgTempChart').getContext('2d');
+                const canvas = document.getElementById('avgTempChart');
+                const ctx = canvas.getContext('2d');
                 if (avgChartInstance) avgChartInstance.destroy();
+
+                const grad = ctx.createLinearGradient(0, 0, 0, canvas.parentElement.clientHeight || 300);
+                grad.addColorStop(0, 'rgba(201, 133, 0, 0.22)');
+                grad.addColorStop(1, 'rgba(201, 133, 0, 0)');
 
                 avgChartInstance = new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: labels,
                         datasets: [{
-                            label: 'Średnia Temp (°C)',
+                            label: 'Średnia temp (°C)',
                             data: values,
-                            borderColor: 'rgb(255, 193, 7)',
-                            backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                            borderColor: COLOR_AVG,
+                            backgroundColor: grad,
                             borderWidth: 2,
                             pointRadius: 2,
                             pointHoverRadius: 5,
@@ -873,6 +1183,7 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
                         plugins: { legend: { display: false } },
                         scales: {
                             x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 10 } },
@@ -886,6 +1197,9 @@
         loadCurrentStatus();
         loadData();
         loadAvgStats('today', document.querySelector('[data-range="today"]'));
+
+        // auto-odświeżanie aktualnych warunków co 5 minut
+        setInterval(loadCurrentStatus, 5 * 60 * 1000);
 
         // --- ZMIANA CZASU (DST) ---
         function getNextDSTChange() {
@@ -926,7 +1240,7 @@
             const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 
             const typeLabel = nextChange.type === 'letni' ? 'letni' : 'zimowy';
-            const html = `Do zmiany na czas ${typeLabel}: <span style="font-weight: 800; color: #ffeb3b;">${days} dni, ${hours} godz, ${minutes} min</span>`;
+            const html = `Do zmiany na czas ${typeLabel}: <span style="font-weight: 700; color: #e8c268;">${days} dni, ${hours} godz, ${minutes} min</span>`;
 
             const el = document.getElementById('dstMessage');
             if (el) el.innerHTML = html;
