@@ -1093,9 +1093,11 @@
                 } catch (e) { console.error(`Błąd pobierania statystyk dla roku ${year}:`, e); }
             };
 
-            await fetchAndFill(currentYear, 'currYear', null, null);
-            await fetchAndFill(prevYear, 'prevYear', 'prev-year-tab-item', 'avg-prev-year-item');
-            await fetchAndFill(pastYear, 'pastYear', 'past-year-tab-item', 'avg-past-year-item');
+            await Promise.all([
+                fetchAndFill(currentYear, 'currYear', null, null),
+                fetchAndFill(prevYear, 'prevYear', 'prev-year-tab-item', 'avg-prev-year-item'),
+                fetchAndFill(pastYear, 'pastYear', 'past-year-tab-item', 'avg-past-year-item')
+            ]);
         }
 
         function renderChart(canvasId, labels, data, label, color, oldInstance, setInstance) {

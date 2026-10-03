@@ -17,7 +17,7 @@ try {
 
     // 1. DANE DZIENNE (To zostało usunięte, a jest konieczne jako pierwszy 'if')
     if ($action === 'chart_data') {
-        $stmt = $pdo->prepare("SELECT * FROM weather_data WHERE DATE(measurement_datetime) = :selectedDate ORDER BY measurement_datetime ASC");
+        $stmt = $pdo->prepare("SELECT * FROM weather_data WHERE measurement_datetime >= :selectedDate AND measurement_datetime < :selectedDate + INTERVAL 1 DAY ORDER BY measurement_datetime ASC");
         $stmt->execute(['selectedDate' => $date]);
         echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
     }
@@ -27,25 +27,40 @@ try {
         // Pobierz rok z parametru GET lub użyj bieżącego
         $year = isset($_GET['year']) ? intval($_GET['year']) : date('Y');
 
-        // Przygotowanie zapytania z filtrowaniem po roku
-        $sql = "
-            SELECT 
-                MAX(temperature) as max_temp, 
-                MIN(temperature) as min_temp,
-                (SELECT measurement_datetime FROM weather_data WHERE temperature = (SELECT MAX(temperature) FROM weather_data WHERE YEAR(measurement_datetime) = :year) AND YEAR(measurement_datetime) = :year LIMIT 1) as max_temp_date,
-                (SELECT measurement_datetime FROM weather_data WHERE temperature = (SELECT MIN(temperature) FROM weather_data WHERE YEAR(measurement_datetime) = :year) AND YEAR(measurement_datetime) = :year LIMIT 1) as min_temp_date,
-                
-                MAX(pressure) as max_press, 
-                MIN(pressure) as min_press,
-                (SELECT measurement_datetime FROM weather_data WHERE pressure = (SELECT MAX(pressure) FROM weather_data WHERE YEAR(measurement_datetime) = :year) AND YEAR(measurement_datetime) = :year LIMIT 1) as max_press_date,
-                (SELECT measurement_datetime FROM weather_data WHERE pressure = (SELECT MIN(pressure) FROM weather_data WHERE YEAR(measurement_datetime) = :year) AND YEAR(measurement_datetime) = :year LIMIT 1) as min_press_date
-            FROM weather_data 
-            WHERE YEAR(measurement_datetime) = :year
-        ";
+        // Zakres dat zamiast YEAR(...), żeby zapytania korzystały z indeksu na measurement_datetime
+        $range = ['start' => "$year-01-01", 'end' => ($year + 1) . "-01-01"];
+        $inYear = "measurement_datetime >= :start AND measurement_datetime < :end";
 
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute(['year' => $year]);
-        echo json_encode($stmt->fetch(PDO::FETCH_ASSOC));
+        // Jeden przebieg po roku dla wartości skrajnych
+        $stmt = $pdo->prepare("SELECT MAX(temperature) AS max_temp, MIN(temperature) AS min_temp,
+                                      MAX(pressure) AS max_press, MIN(pressure) AS min_press
+                               FROM weather_data WHERE $inYear");
+        $stmt->execute($range);
+        $stats = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // Data pierwszego wystąpienia każdej wartości skrajnej
+        $columns = ['max_temp' => 'temperature', 'min_temp' => 'temperature', 'max_press' => 'pressure', 'min_press' => 'pressure'];
+        $dateStmts = [];
+        foreach ($columns as $key => $column) {
+            $stats[$key . '_date'] = null;
+            if ($stats[$key] === null) continue;
+            $dateStmts[$column] ??= $pdo->prepare("SELECT measurement_datetime FROM weather_data
+                                                   WHERE $inYear AND $column = :val
+                                                   ORDER BY measurement_datetime ASC LIMIT 1");
+            $dateStmts[$column]->execute($range + ['val' => $stats[$key]]);
+            $stats[$key . '_date'] = $dateStmts[$column]->fetchColumn() ?: null;
+        }
+
+        echo json_encode([
+            'max_temp'       => $stats['max_temp'],
+            'min_temp'       => $stats['min_temp'],
+            'max_temp_date'  => $stats['max_temp_date'],
+            'min_temp_date'  => $stats['min_temp_date'],
+            'max_press'      => $stats['max_press'],
+            'min_press'      => $stats['min_press'],
+            'max_press_date' => $stats['max_press_date'],
+            'min_press_date' => $stats['min_press_date'],
+        ]);
     }
 
     // 3. TREND ROCZNY
@@ -65,7 +80,7 @@ try {
             // Grupuj po godzinie dla dzisiejszego dnia
             $sql = "SELECT DATE_FORMAT(measurement_datetime, '%Y-%m-%d %H:00') as date_label, AVG(temperature) as avg_temp 
                     FROM weather_data 
-                    WHERE DATE(measurement_datetime) = CURDATE() 
+                    WHERE measurement_datetime >= CURDATE() AND measurement_datetime < CURDATE() + INTERVAL 1 DAY 
                     GROUP BY date_label 
                     ORDER BY date_label ASC";
         } elseif ($range === '7days') {
@@ -84,7 +99,7 @@ try {
             // Ten miesiąc
             $sql = "SELECT DATE(measurement_datetime) as date_label, AVG(temperature) as avg_temp 
                     FROM weather_data 
-                    WHERE YEAR(measurement_datetime) = YEAR(CURDATE()) AND MONTH(measurement_datetime) = MONTH(CURDATE())
+                    WHERE measurement_datetime >= DATE_FORMAT(CURDATE(), '%Y-%m-01') AND measurement_datetime < DATE_FORMAT(CURDATE(), '%Y-%m-01') + INTERVAL 1 MONTH
                     GROUP BY date_label 
                     ORDER BY date_label ASC";
         } elseif ($range === 'year' || $range === 'current_year') {
@@ -95,7 +110,7 @@ try {
             // Let's do Monthly averages for year views.
             $sql = "SELECT DATE_FORMAT(measurement_datetime, '%Y-%m') as date_label, AVG(temperature) as avg_temp 
                     FROM weather_data 
-                    WHERE YEAR(measurement_datetime) = YEAR(CURDATE())
+                    WHERE measurement_datetime >= MAKEDATE(YEAR(CURDATE()), 1) AND measurement_datetime < MAKEDATE(YEAR(CURDATE()) + 1, 1)
                     GROUP BY date_label 
                     ORDER BY date_label ASC";
         } elseif (is_numeric($range)) {
@@ -103,10 +118,10 @@ try {
              $year = intval($range);
              $sql = "SELECT DATE_FORMAT(measurement_datetime, '%Y-%m') as date_label, AVG(temperature) as avg_temp 
                     FROM weather_data 
-                    WHERE YEAR(measurement_datetime) = :year
+                    WHERE measurement_datetime >= :start AND measurement_datetime < :end
                     GROUP BY date_label 
                     ORDER BY date_label ASC";
-             $params['year'] = $year;
+             $params = ['start' => "$year-01-01", 'end' => ($year + 1) . "-01-01"];
         } else {
             // Default 30 days
              $sql = "SELECT DATE(measurement_datetime) as date_label, AVG(temperature) as avg_temp 
