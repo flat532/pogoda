@@ -970,11 +970,6 @@
             document.getElementById('tempHeader').innerText = `Temperatura · ${formatHeaderDate(date)}`;
             document.getElementById('pressHeader').innerText = `Ciśnienie · ${formatHeaderDate(date)}`;
 
-            loadYearlyStats();
-            loadYearlyTrend();
-            loadMonthlyStats();
-            loadCurrentStatus();
-
             const response = await fetch(`api.php?action=chart_data&date=${date}`);
             const data = await response.json();
 
@@ -1194,7 +1189,12 @@
             } catch (e) { console.error('Błąd pobierania średnich temperatur:', e); }
         }
 
+        // dane niezależne od wybranej daty — ładowane raz
         loadCurrentStatus();
+        loadYearlyStats();
+        loadYearlyTrend();
+        loadMonthlyStats();
+
         loadData();
         loadAvgStats('today', document.querySelector('[data-range="today"]'));
 
