@@ -1147,7 +1147,7 @@
 
                 const labels = data.map(e => {
                     if (range === 'today') return e.date_label.substring(11, 16);
-                    if (range.includes('year') || range === '2025' || range === '2024') {
+                    if (range === 'year' || /^\d{4}$/.test(range)) {
                         const d = new Date(e.date_label + "-01");
                         return d.toLocaleDateString('pl-PL', { month: 'short' });
                     }
