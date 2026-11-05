@@ -16,6 +16,7 @@ A robust web application designed to monitor, archive, and visualize weather dat
 * **Average Temperatures:** Average temperature chart for today (hourly), last 7/30 days, current month, and current/previous years (monthly).
 * **DST Countdown:** Countdown to the next EU daylight saving time change (last Sunday of March/October, 01:00 UTC).
 * **Automated Archiving:** Bash script that packs raw JSON files older than 24h into a tar archive.
+* **Languages:** Polish and English, switchable in the top bar (choice is remembered; `?lang=en` links work; default follows the browser language). Adding a language means adding one dictionary to `i18n.js`.
 * **Responsive Design:** Dark-themed interface optimized for both mobile and desktop devices (built with **Bootstrap 5**).
 
 ## 🛠️ Tech Stack
@@ -30,6 +31,7 @@ A robust web application designed to monitor, archive, and visualize weather dat
 | File | Purpose |
 |---|---|
 | `index.html` | Single-page frontend (HTML, CSS and JS in one file) |
+| `i18n.js` | UI translations (PL, EN) and language switching helpers |
 | `api.php` | JSON API used by the frontend |
 | `update_data.php` | Fetches current weather and stores it (CLI/cron only) |
 | `config.php` | Loads `.env` and returns the configuration array |
