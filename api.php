@@ -177,6 +177,14 @@ try {
             $stmtSince->execute($loc);
             $currentData['collected_since'] = $stmtSince->fetchColumn();
 
+            // Zanieczyszczenie powietrza z OpenWeatherMap (tylko świeży odczyt, max 3 godziny)
+            $stmtPol = $pdo->prepare("SELECT measurement_datetime, aqi, pm2_5, pm10, no2, o3, so2, co FROM air_pollution
+                                      WHERE location = :location AND measurement_datetime > NOW() - INTERVAL 3 HOUR
+                                      ORDER BY measurement_datetime DESC LIMIT 1");
+            $stmtPol->execute($loc);
+            $pol = $stmtPol->fetch(PDO::FETCH_ASSOC);
+            $currentData['pollution'] = $pol ? array_map(fn($v) => is_numeric($v) ? $v + 0 : $v, $pol) : null;
+
             // Jakość powietrza z paczkomatu InPost (tylko świeży odczyt, max 3 godziny)
             $stmtAir = $pdo->prepare("SELECT point, air_index_level, measurement_datetime, raw_json FROM air_quality
                                       WHERE location = :location AND source = 'inpost' AND air_index_level IS NOT NULL
@@ -230,6 +238,38 @@ try {
         }
 
         echo json_encode($currentData);
+    }
+
+    // 7. HISTORIA ZANIECZYSZCZEŃ — wszystkie miasta naraz (porównanie na jednym wykresie)
+    elseif ($action === 'air_history') {
+        $range = $_GET['range'] ?? '7days';
+        $metrics = "pm2_5, pm10, no2, o3";
+        if ($range === '7days') {
+            // Godzinowo
+            $sql = "SELECT location, DATE_FORMAT(measurement_datetime, '%Y-%m-%d %H:00') AS t, $metrics
+                    FROM air_pollution WHERE measurement_datetime > NOW() - INTERVAL 7 DAY
+                    ORDER BY measurement_datetime";
+        } else {
+            // Średnie dobowe: 30 dni albo 12 miesięcy
+            $interval = $range === 'year' ? 'INTERVAL 1 YEAR' : 'INTERVAL 30 DAY';
+            $sql = "SELECT location, DATE(measurement_datetime) AS t,
+                           ROUND(AVG(pm2_5), 2) AS pm2_5, ROUND(AVG(pm10), 2) AS pm10, ROUND(AVG(no2), 2) AS no2, ROUND(AVG(o3), 2) AS o3
+                    FROM air_pollution WHERE measurement_datetime > NOW() - $interval
+                    GROUP BY location, t ORDER BY t";
+        }
+
+        $result = array_fill_keys($locations, []);
+        foreach ($pdo->query($sql, PDO::FETCH_ASSOC) as $row) {
+            if (!isset($result[$row['location']])) continue;
+            $result[$row['location']][] = [
+                't' => $row['t'],
+                'pm2_5' => $row['pm2_5'] === null ? null : (float)$row['pm2_5'],
+                'pm10' => $row['pm10'] === null ? null : (float)$row['pm10'],
+                'no2' => $row['no2'] === null ? null : (float)$row['no2'],
+                'o3' => $row['o3'] === null ? null : (float)$row['o3'],
+            ];
+        }
+        echo json_encode($result);
     }
 
 } catch (PDOException $e) {

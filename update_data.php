@@ -9,6 +9,7 @@ chdir(__DIR__);
 
 // Wczytanie konfiguracji
 $config = require 'config.php';
+require 'pollution.php';
 $apiConfig = $config['weather_api'];
 $db = $config['db'];
 
@@ -110,8 +111,35 @@ foreach ($config['locations'] as $location => $cityId) {
 
         echo "✅ Data inserted/updated in DB for {$location} {$datetime}<br>";
 
+        if (isset($decoded['coord']['lat'], $decoded['coord']['lon'])) {
+            $coords[$location] = $decoded['coord'];
+        }
+
     } catch (PDOException $e) {
         echo "❌ DB Error ({$location}): " . $e->getMessage() . "<br>";
+    }
+}
+
+// Zanieczyszczenie powietrza z OpenWeatherMap (Air Pollution API, ten sam klucz) —
+// współrzędne z odpowiedzi pogodowej, więc tylko dla miast pobranych powyżej
+$pollutionUrl = preg_replace('#/weather$#', '/air_pollution', $apiConfig['url_base']);
+$pollutionStmt = null;
+
+foreach ($coords ?? [] as $location => $coord) {
+    $raw = @file_get_contents("{$pollutionUrl}?lat={$coord['lat']}&lon={$coord['lon']}&appid={$apiKey}");
+    $item = $raw ? (json_decode($raw, true)['list'][0] ?? null) : null;
+
+    if (!$item || !isset($item['main']['aqi'])) {
+        echo "❌ No air pollution data for {$location}<br>";
+        continue;
+    }
+
+    try {
+        $pollutionStmt ??= $pdo->prepare(POLLUTION_UPSERT);
+        $pollutionStmt->execute(pollutionRow($location, $datetime, $item));
+        echo "✅ Air pollution {$location}: AQI {$item['main']['aqi']}, PM2.5 {$item['components']['pm2_5']}<br>";
+    } catch (PDOException $e) {
+        echo "❌ DB Error (pollution {$location}): " . $e->getMessage() . "<br>";
     }
 }
 

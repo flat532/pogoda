@@ -5,9 +5,10 @@ A robust web application designed to monitor, archive, and visualize weather dat
 ## 🚀 Key Features
 
 * **Multiple Cities:** Switch between collected cities (Gliwice, Amsterdam); the choice is remembered and `?city=amsterdam` links work. Amsterdam has been collected since 5 November 2026.
-* **Real-time Conditions:** Live monitoring of temperature, humidity, pressure, and last update time (auto-refreshed every 5 minutes).
+* **Real-time Conditions:** Compact panel with temperature, feels-like temperature, humidity, pressure, air quality index and last update time (auto-refreshed every 5 minutes).
 * **Air Quality (InPost):** Air quality index from the sensor of a nearby InPost parcel locker (Gliwice: `GLI01BAPP`), fetched hourly from the public InPost points API and shown as a tile next to humidity and pressure. Hidden for cities without a configured locker.
-* **Year-over-Year Comparison:** Shows how the current temperature differs from the same hour one year ago.
+* **Year-over-Year Comparison:** A small chip under the temperature shows how it differs from the same hour one year ago.
+* **Air Pollution (OpenWeatherMap):** Hourly AQI (1–5), PM2.5, PM10, NO₂, O₃, SO₂ and CO for every city, with bars relative to the WHO 2021 guidelines and a chart comparing all cities (PM2.5/PM10/NO₂/O₃; 7 days hourly, 30 days and 12 months as daily averages) with the WHO guideline line. History was backfilled from 19 November 2023 via the Air Pollution history API.
 * **Daily Charts:** Detailed temperature and pressure trends for any selected date, with previous/next day navigation (powered by **Chart.js**).
 * **Calendar Year Records:**
     * Interactive **Tabbed Interface** for viewing records by year (current and two previous years; tabs without data are hidden).
@@ -35,10 +36,11 @@ A robust web application designed to monitor, archive, and visualize weather dat
 | `index.html` | Single-page frontend (HTML, CSS and JS in one file) |
 | `i18n.js` | UI translations (PL, EN, NL) and language switching helpers |
 | `api.php` | JSON API used by the frontend |
-| `update_data.php` | Fetches current weather and stores it (CLI/cron only) |
+| `update_data.php` | Fetches current weather, air pollution and InPost air quality and stores them (CLI/cron only) |
+| `pollution.php` | Shared upsert for OpenWeatherMap air pollution rows |
 | `config.php` | Loads `.env` and returns the configuration array, including the list of collected cities |
 | `arch.sh` | Archives raw JSON files older than 24h into `archive/old/old.tar` |
-| `.htaccess` | Blocks web access to `update_data.php`, `config.php` and `arch.sh` |
+| `.htaccess` | Blocks web access to `update_data.php`, `config.php`, `pollution.php` and `arch.sh` |
 | `archive/` | Raw OpenWeatherMap responses, one file per city and hour (`<City>-YYYY-MM-DD-HH.json`) |
 
 ## ⚙️ Installation & Configuration
@@ -80,6 +82,29 @@ CREATE TABLE weather_data (
     KEY idx_datetime (measurement_datetime),
     KEY idx_temperature (temperature),
     KEY idx_datetime_temp (measurement_datetime, temperature)
+);
+```
+
+Air pollution from OpenWeatherMap (one row per city and hour) is stored in:
+
+```sql
+CREATE TABLE air_pollution (
+    id INT NOT NULL AUTO_INCREMENT,
+    location VARCHAR(100) NOT NULL,
+    measurement_datetime DATETIME NOT NULL,
+    aqi TINYINT DEFAULT NULL,
+    pm2_5 DECIMAL(7,2) DEFAULT NULL,
+    pm10 DECIMAL(7,2) DEFAULT NULL,
+    no2 DECIMAL(7,2) DEFAULT NULL,
+    o3 DECIMAL(7,2) DEFAULT NULL,
+    so2 DECIMAL(7,2) DEFAULT NULL,
+    co DECIMAL(8,2) DEFAULT NULL,
+    no DECIMAL(7,2) DEFAULT NULL,
+    nh3 DECIMAL(7,2) DEFAULT NULL,
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY unique_pollution (location, measurement_datetime),
+    KEY idx_pollution_datetime (measurement_datetime)
 );
 ```
 
@@ -139,11 +164,12 @@ All actions accept an optional `location` parameter (a city name from `config.ph
 | Action | Parameters | Returns |
 |---|---|---|
 | `locations` | – | List of available cities |
-| `current` | – | Latest measurement plus `historical_comparison` with the same hour one year ago, `collected_since` (first measurement) and `air` (latest InPost air quality reading from the last 3 hours, or `null`) |
+| `current` | – | Latest measurement plus `historical_comparison` with the same hour one year ago, `collected_since` (first measurement), `pollution` (latest OpenWeatherMap air pollution reading) and `air` (latest InPost air quality reading); both from the last 3 hours, or `null` |
 | `chart_data` | `date` (`YYYY-MM-DD`, default today) | All measurements for the given day |
 | `year_stats` | `year` (default current) | Max/Min temperature and pressure for the year, with the date of their first occurrence |
 | `yearly_trend` | – | Daily Max/Min temperature for the last 12 months |
 | `monthly_stats` | – | Monthly Max/Min temperature for the last 14 months |
+| `air_history` | `range`: `7days` (hourly), `30days`, `year` (daily averages) | PM2.5, PM10, NO₂ and O₃ for **all** cities, keyed by city name (ignores `location`) |
 | `avg_stats` | `range`: `today`, `7days`, `30days`, `month`, `year` or a four-digit year | Average temperature per hour (`today`), day, or month (`year` and specific years) |
 
 ## ⚠️ Known Limitations
