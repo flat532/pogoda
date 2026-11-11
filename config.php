@@ -51,8 +51,14 @@ return [
     ],
     'weather_api' => [
         'key'      => $env['WEATHER_API_KEY'] ?? '',
-        'location' => $env['WEATHER_LOCATION'] ?? 'Gliwice',
         'url_base' => $env['WEATHER_API_URL'] ?? 'http://api.openweathermap.org/data/2.5/weather'
+    ],
+    // Zbierane miasta: nazwa w bazie (kolumna location) => identyfikator miasta w OpenWeatherMap.
+    // Pierwsze miasto jest domyślne na stronie. Godziny pomiarów zapisywane są w czasie serwera
+    // (Europe/Warsaw), więc dodawaj tylko miasta z tej samej strefy czasowej.
+    'locations' => [
+        'Gliwice'   => 3099230,
+        'Amsterdam' => 2759794,
     ]
 ];
 ?>

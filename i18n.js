@@ -6,12 +6,22 @@ const I18N = {
         _label: 'Polski',
         _locale: 'pl-PL',
 
-        pageTitle: 'Stacja Pogodowa Gliwice',
+        pageTitle: 'Stacja Pogodowa {city}',
         brand: 'Stacja Pogodowa',
-        brandSub: 'Gliwice · na żywo',
+        brandSub: '{city} · na żywo',
         langSwitch: 'Język',
+        citySwitch: 'Miasto',
 
-        nowIn: 'Teraz w Gliwicach',
+        // Odmienione nazwy miast („w …”, „dla …”); brak wpisu → inCity / forCity
+        cities: {
+            Gliwice: { in: 'w Gliwicach', for: 'dla Gliwic' },
+            Amsterdam: { in: 'w Amsterdamie', for: 'dla Amsterdamu' }
+        },
+        inCity: 'w {city}',
+        forCity: 'dla {city}',
+        collectingSince: 'Dane {cityFor} zbierane są od {date}. Rekordy i statystyki będą się uzupełniać z czasem.',
+
+        nowIn: 'Teraz {cityIn}',
         lastReading: 'Ostatni pomiar: {time}',
         humidity: 'Wilgotność',
         pressure: 'Ciśnienie',
@@ -52,7 +62,7 @@ const I18N = {
         hoursShort: 'godz',
         minutesShort: 'min',
 
-        footer: 'Stacja Pogodowa Gliwice · dane: OpenWeatherMap · odczyt automatyczny co godzinę'
+        footer: 'Stacja Pogodowa {city} · dane: OpenWeatherMap · odczyt automatyczny co godzinę'
     },
 
     en: {
@@ -60,12 +70,18 @@ const I18N = {
         _label: 'English',
         _locale: 'en-GB',
 
-        pageTitle: 'Gliwice Weather Station',
+        pageTitle: '{city} Weather Station',
         brand: 'Weather Station',
-        brandSub: 'Gliwice · live',
+        brandSub: '{city} · live',
         langSwitch: 'Language',
+        citySwitch: 'City',
 
-        nowIn: 'Now in Gliwice',
+        cities: {},
+        inCity: 'in {city}',
+        forCity: 'for {city}',
+        collectingSince: 'Data {cityFor} has been collected since {date}. Records and statistics will fill in over time.',
+
+        nowIn: 'Now {cityIn}',
         lastReading: 'Last reading: {time}',
         humidity: 'Humidity',
         pressure: 'Pressure',
@@ -106,7 +122,67 @@ const I18N = {
         hoursShort: 'h',
         minutesShort: 'min',
 
-        footer: 'Gliwice Weather Station · data: OpenWeatherMap · updated automatically every hour'
+        footer: '{city} Weather Station · data: OpenWeatherMap · updated automatically every hour'
+    },
+
+    nl: {
+        _name: 'NL',
+        _label: 'Nederlands',
+        _locale: 'nl-NL',
+
+        pageTitle: 'Weerstation {city}',
+        brand: 'Weerstation',
+        brandSub: '{city} · live',
+        langSwitch: 'Taal',
+        citySwitch: 'Stad',
+
+        cities: {},
+        inCity: 'in {city}',
+        forCity: 'voor {city}',
+        collectingSince: 'Gegevens {cityFor} worden verzameld sinds {date}. Records en statistieken vullen zich in de loop van de tijd aan.',
+
+        nowIn: 'Nu {cityIn}',
+        lastReading: 'Laatste meting: {time}',
+        humidity: 'Luchtvochtigheid',
+        pressure: 'Luchtdruk',
+        temperature: 'Temperatuur',
+        wind: 'Wind',
+        precipitation: 'Neerslag',
+
+        histSame: 'Een jaar geleden was de temperatuur op dit uur <strong>hetzelfde</strong> ({temp}°C).',
+        histColder: 'Een jaar geleden was het op dit uur <strong>{diff}°C kouder</strong> (temp: {temp}°C).',
+        histWarmer: 'Een jaar geleden was het op dit uur <strong>{diff}°C warmer</strong> (temp: {temp}°C).',
+
+        selectedDay: 'Geselecteerde dag',
+        prevDay: 'Vorige dag',
+        nextDay: 'Volgende dag',
+        show: 'Toon',
+        maxTemp: 'Max temp',
+        minTemp: 'Min temp',
+
+        records: 'Records',
+        monthlyOverview: 'Maandoverzicht',
+        month: 'Maand',
+        yearlyTrend: 'Jaartrend (min / max)',
+        last12Months: 'Laatste 12 maanden',
+        avgTemperature: 'Gemiddelde temperatuur',
+        rangeToday: 'Vandaag',
+        range7days: '7 dagen',
+        range30days: '30 dagen',
+        rangeMonth: 'Deze maand',
+        rangeYear: 'Dit jaar',
+
+        chartMaxTemp: 'Max temp (°C)',
+        chartMinTemp: 'Min temp (°C)',
+        chartAvgTemp: 'Gem. temp (°C)',
+
+        dstSummer: 'Tot de zomertijd:',
+        dstWinter: 'Tot de wintertijd:',
+        days: { one: 'dag', other: 'dagen' },
+        hoursShort: 'u',
+        minutesShort: 'min',
+
+        footer: 'Weerstation {city} · gegevens: OpenWeatherMap · elk uur automatisch bijgewerkt'
     }
 };
 
@@ -130,10 +206,34 @@ function detectLang() {
     return I18N.en ? 'en' : DEFAULT_LANG;
 }
 
+// Bieżące miasto (klucz z bazy) — wstawiane do tekstów jako {city}, {cityIn} i {cityFor}
+let i18nCity = null;
+
+function setI18nCity(key) {
+    i18nCity = key;
+}
+
+function fill(text, params) {
+    return text.replace(/\{(\w+)\}/g, (m, name) => params[name] ?? m);
+}
+
 // Tekst z bieżącego słownika; {nazwa} zastępowane wartościami z params
 function t(key, params = {}) {
     const text = I18N[currentLang][key] ?? I18N[DEFAULT_LANG][key] ?? key;
-    return text.replace(/\{(\w+)\}/g, (m, name) => params[name] ?? m);
+    const context = i18nCity
+        ? { city: cityName(i18nCity), cityIn: cityForm(i18nCity, 'in', 'inCity'), cityFor: cityForm(i18nCity, 'for', 'forCity') }
+        : {};
+    return fill(text, { ...context, ...params });
+}
+
+// Nazwa miasta w bieżącym języku
+function cityName(key) {
+    return I18N[currentLang].cities?.[key]?.name ?? key;
+}
+
+// Odmieniona forma nazwy (np. 'in' → w Gliwicach / in Gliwice); brak wpisu → wzorzec fallbackKey
+function cityForm(key, form, fallbackKey) {
+    return I18N[currentLang].cities?.[key]?.[form] ?? fill(I18N[currentLang][fallbackKey], { city: cityName(key) });
 }
 
 // Forma liczebnika zgodna z regułami języka (np. 1 dzień / 2 dni / 5 dni)

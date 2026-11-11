@@ -15,10 +15,26 @@ try {
     $action = $_GET['action'] ?? 'chart_data';
     $date = $_GET['date'] ?? date('Y-m-d');
 
+    // Miasto: tylko z listy w config.php; brak parametru = pierwsze (domyślne) miasto
+    $locations = array_keys($config['locations']);
+    $location = $_GET['location'] ?? $locations[0];
+    if (!in_array($location, $locations, true)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Nieznane miasto']);
+        exit;
+    }
+    $loc = ['location' => $location];
+
+    // 0. LISTA MIAST
+    if ($action === 'locations') {
+        echo json_encode($locations);
+        exit;
+    }
+
     // 1. DANE DZIENNE (To zostało usunięte, a jest konieczne jako pierwszy 'if')
     if ($action === 'chart_data') {
-        $stmt = $pdo->prepare("SELECT * FROM weather_data WHERE measurement_datetime >= :selectedDate AND measurement_datetime < :selectedDate + INTERVAL 1 DAY ORDER BY measurement_datetime ASC");
-        $stmt->execute(['selectedDate' => $date]);
+        $stmt = $pdo->prepare("SELECT * FROM weather_data WHERE location = :location AND measurement_datetime >= :selectedDate AND measurement_datetime < :selectedDate + INTERVAL 1 DAY ORDER BY measurement_datetime ASC");
+        $stmt->execute($loc + ['selectedDate' => $date]);
         echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
     }
 
@@ -28,8 +44,8 @@ try {
         $year = isset($_GET['year']) ? intval($_GET['year']) : date('Y');
 
         // Zakres dat zamiast YEAR(...), żeby zapytania korzystały z indeksu na measurement_datetime
-        $range = ['start' => "$year-01-01", 'end' => ($year + 1) . "-01-01"];
-        $inYear = "measurement_datetime >= :start AND measurement_datetime < :end";
+        $range = $loc + ['start' => "$year-01-01", 'end' => ($year + 1) . "-01-01"];
+        $inYear = "location = :location AND measurement_datetime >= :start AND measurement_datetime < :end";
 
         // Jeden przebieg po roku dla wartości skrajnych
         $stmt = $pdo->prepare("SELECT MAX(temperature) AS max_temp, MIN(temperature) AS min_temp,
@@ -65,7 +81,8 @@ try {
 
     // 3. TREND ROCZNY
     elseif ($action === 'yearly_trend') {
-        $stmt = $pdo->query("SELECT DATE(measurement_datetime) as date, MAX(temperature) as max_temp, MIN(temperature) as min_temp FROM weather_data WHERE measurement_datetime > DATE_SUB(NOW(), INTERVAL 1 YEAR) GROUP BY DATE(measurement_datetime) ORDER BY date ASC");
+        $stmt = $pdo->prepare("SELECT DATE(measurement_datetime) as date, MAX(temperature) as max_temp, MIN(temperature) as min_temp FROM weather_data WHERE location = :location AND measurement_datetime > DATE_SUB(NOW(), INTERVAL 1 YEAR) GROUP BY DATE(measurement_datetime) ORDER BY date ASC");
+        $stmt->execute($loc);
         echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
     }
 
@@ -80,26 +97,26 @@ try {
             // Grupuj po godzinie dla dzisiejszego dnia
             $sql = "SELECT DATE_FORMAT(measurement_datetime, '%Y-%m-%d %H:00') as date_label, AVG(temperature) as avg_temp 
                     FROM weather_data 
-                    WHERE measurement_datetime >= CURDATE() AND measurement_datetime < CURDATE() + INTERVAL 1 DAY 
+                    WHERE location = :location AND measurement_datetime >= CURDATE() AND measurement_datetime < CURDATE() + INTERVAL 1 DAY 
                     GROUP BY date_label 
                     ORDER BY date_label ASC";
         } elseif ($range === '7days') {
             $sql = "SELECT DATE(measurement_datetime) as date_label, AVG(temperature) as avg_temp 
                     FROM weather_data 
-                    WHERE measurement_datetime > DATE_SUB(NOW(), INTERVAL 7 DAY) 
+                    WHERE location = :location AND measurement_datetime > DATE_SUB(NOW(), INTERVAL 7 DAY) 
                     GROUP BY date_label 
                     ORDER BY date_label ASC";
         } elseif ($range === '30days') {
             $sql = "SELECT DATE(measurement_datetime) as date_label, AVG(temperature) as avg_temp 
                     FROM weather_data 
-                    WHERE measurement_datetime > DATE_SUB(NOW(), INTERVAL 30 DAY) 
+                    WHERE location = :location AND measurement_datetime > DATE_SUB(NOW(), INTERVAL 30 DAY) 
                     GROUP BY date_label 
                     ORDER BY date_label ASC";
         } elseif ($range === 'month') {
             // Ten miesiąc
             $sql = "SELECT DATE(measurement_datetime) as date_label, AVG(temperature) as avg_temp 
                     FROM weather_data 
-                    WHERE measurement_datetime >= DATE_FORMAT(CURDATE(), '%Y-%m-01') AND measurement_datetime < DATE_FORMAT(CURDATE(), '%Y-%m-01') + INTERVAL 1 MONTH
+                    WHERE location = :location AND measurement_datetime >= DATE_FORMAT(CURDATE(), '%Y-%m-01') AND measurement_datetime < DATE_FORMAT(CURDATE(), '%Y-%m-01') + INTERVAL 1 MONTH
                     GROUP BY date_label 
                     ORDER BY date_label ASC";
         } elseif ($range === 'year' || $range === 'current_year') {
@@ -110,7 +127,7 @@ try {
             // Let's do Monthly averages for year views.
             $sql = "SELECT DATE_FORMAT(measurement_datetime, '%Y-%m') as date_label, AVG(temperature) as avg_temp 
                     FROM weather_data 
-                    WHERE measurement_datetime >= MAKEDATE(YEAR(CURDATE()), 1) AND measurement_datetime < MAKEDATE(YEAR(CURDATE()) + 1, 1)
+                    WHERE location = :location AND measurement_datetime >= MAKEDATE(YEAR(CURDATE()), 1) AND measurement_datetime < MAKEDATE(YEAR(CURDATE()) + 1, 1)
                     GROUP BY date_label 
                     ORDER BY date_label ASC";
         } elseif (is_numeric($range)) {
@@ -118,7 +135,7 @@ try {
              $year = intval($range);
              $sql = "SELECT DATE_FORMAT(measurement_datetime, '%Y-%m') as date_label, AVG(temperature) as avg_temp 
                     FROM weather_data 
-                    WHERE measurement_datetime >= :start AND measurement_datetime < :end
+                    WHERE location = :location AND measurement_datetime >= :start AND measurement_datetime < :end
                     GROUP BY date_label 
                     ORDER BY date_label ASC";
              $params = ['start' => "$year-01-01", 'end' => ($year + 1) . "-01-01"];
@@ -126,13 +143,13 @@ try {
             // Default 30 days
              $sql = "SELECT DATE(measurement_datetime) as date_label, AVG(temperature) as avg_temp 
                     FROM weather_data 
-                    WHERE measurement_datetime > DATE_SUB(NOW(), INTERVAL 30 DAY) 
+                    WHERE location = :location AND measurement_datetime > DATE_SUB(NOW(), INTERVAL 30 DAY) 
                     GROUP BY date_label 
                     ORDER BY date_label ASC";
         }
 
         $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
+        $stmt->execute($loc + $params);
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         // Formatowanie etykiet (opcjonalne, można robić w JS, ale tu też OK)
@@ -142,17 +159,24 @@ try {
 
     // 5. TABELA MIESIĘCZNA
     elseif ($action === 'monthly_stats') {
-        $stmt = $pdo->query("SELECT DATE_FORMAT(measurement_datetime, '%Y-%m') as month_id, MAX(temperature) as max_temp, MIN(temperature) as min_temp FROM weather_data WHERE measurement_datetime > DATE_SUB(NOW(), INTERVAL 14 MONTH) GROUP BY month_id ORDER BY month_id DESC LIMIT 14");
+        $stmt = $pdo->prepare("SELECT DATE_FORMAT(measurement_datetime, '%Y-%m') as month_id, MAX(temperature) as max_temp, MIN(temperature) as min_temp FROM weather_data WHERE location = :location AND measurement_datetime > DATE_SUB(NOW(), INTERVAL 14 MONTH) GROUP BY month_id ORDER BY month_id DESC LIMIT 14");
+        $stmt->execute($loc);
         echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
     }
 
     // 5. AKTUALNE WARUNKI
     elseif ($action === 'current') {
         // Pobierz najnowszy pomiar
-        $stmt = $pdo->query("SELECT * FROM weather_data ORDER BY measurement_datetime DESC LIMIT 1");
+        $stmt = $pdo->prepare("SELECT * FROM weather_data WHERE location = :location ORDER BY measurement_datetime DESC LIMIT 1");
+        $stmt->execute($loc);
         $currentData = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($currentData) {
+            // Od kiedy zbierane są dane dla miasta (pierwszy pomiar)
+            $stmtSince = $pdo->prepare("SELECT MIN(measurement_datetime) FROM weather_data WHERE location = :location");
+            $stmtSince->execute($loc);
+            $currentData['collected_since'] = $stmtSince->fetchColumn();
+
             // Logika porównania z rokiem ubiegłym
             $currentDate = new DateTime($currentData['measurement_datetime']);
             $pastDateTarget = (clone $currentDate)->modify('-1 year');
@@ -164,12 +188,12 @@ try {
             $stmtPast = $pdo->prepare("
                 SELECT temperature, measurement_datetime 
                 FROM weather_data 
-                WHERE measurement_datetime BETWEEN :start AND :end 
+                WHERE location = :location AND measurement_datetime BETWEEN :start AND :end 
                 ORDER BY ABS(TIMESTAMPDIFF(SECOND, measurement_datetime, :target)) ASC 
                 LIMIT 1
             ");
             
-            $stmtPast->execute([
+            $stmtPast->execute($loc + [
                 'start' => $pastStart,
                 'end' => $pastEnd,
                 'target' => $pastDateTarget->format('Y-m-d H:i:s')

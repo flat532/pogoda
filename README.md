@@ -1,9 +1,10 @@
-# 🌤️ Weather Station - Gliwice
+# 🌤️ Weather Station - Gliwice & Amsterdam
 
-A robust web application designed to monitor, archive, and visualize weather data for the city of Gliwice. The system automatically fetches data from OpenWeatherMap, stores it in a MySQL database, optimizes storage via automated JSON archiving, and presents detailed statistics through interactive charts.
+A robust web application designed to monitor, archive, and visualize weather data for Gliwice and Amsterdam (more cities can be added in `config.php`). The system automatically fetches data from OpenWeatherMap, stores it in a MySQL database, optimizes storage via automated JSON archiving, and presents detailed statistics through interactive charts.
 
 ## 🚀 Key Features
 
+* **Multiple Cities:** Switch between collected cities (Gliwice, Amsterdam); the choice is remembered and `?city=amsterdam` links work. Amsterdam has been collected since 5 November 2026.
 * **Real-time Conditions:** Live monitoring of temperature, humidity, pressure, and last update time (auto-refreshed every 5 minutes).
 * **Year-over-Year Comparison:** Shows how the current temperature differs from the same hour one year ago.
 * **Daily Charts:** Detailed temperature and pressure trends for any selected date, with previous/next day navigation (powered by **Chart.js**).
@@ -16,7 +17,7 @@ A robust web application designed to monitor, archive, and visualize weather dat
 * **Average Temperatures:** Average temperature chart for today (hourly), last 7/30 days, current month, and current/previous years (monthly).
 * **DST Countdown:** Countdown to the next EU daylight saving time change (last Sunday of March/October, 01:00 UTC).
 * **Automated Archiving:** Bash script that packs raw JSON files older than 24h into a tar archive.
-* **Languages:** Polish and English, switchable in the top bar (choice is remembered; `?lang=en` links work; default follows the browser language). Adding a language means adding one dictionary to `i18n.js`.
+* **Languages:** Polish, English and Dutch, switchable in the top bar (choice is remembered; `?lang=en` links work; default follows the browser language). Adding a language means adding one dictionary to `i18n.js`.
 * **Responsive Design:** Dark-themed interface optimized for both mobile and desktop devices (built with **Bootstrap 5**).
 
 ## 🛠️ Tech Stack
@@ -31,13 +32,13 @@ A robust web application designed to monitor, archive, and visualize weather dat
 | File | Purpose |
 |---|---|
 | `index.html` | Single-page frontend (HTML, CSS and JS in one file) |
-| `i18n.js` | UI translations (PL, EN) and language switching helpers |
+| `i18n.js` | UI translations (PL, EN, NL) and language switching helpers |
 | `api.php` | JSON API used by the frontend |
 | `update_data.php` | Fetches current weather and stores it (CLI/cron only) |
-| `config.php` | Loads `.env` and returns the configuration array |
+| `config.php` | Loads `.env` and returns the configuration array, including the list of collected cities |
 | `arch.sh` | Archives raw JSON files older than 24h into `archive/old/old.tar` |
 | `.htaccess` | Blocks web access to `update_data.php`, `config.php` and `arch.sh` |
-| `archive/` | Raw OpenWeatherMap responses, one file per hour (`Gliwice-YYYY-MM-DD-HH.json`) |
+| `archive/` | Raw OpenWeatherMap responses, one file per city and hour (`<City>-YYYY-MM-DD-HH.json`) |
 
 ## ⚙️ Installation & Configuration
 
@@ -92,9 +93,10 @@ DB_PASS=your_password
 DB_CHARSET=utf8mb4
 
 WEATHER_API_KEY=your_openweathermap_key
-WEATHER_LOCATION=Gliwice
 WEATHER_API_URL=http://api.openweathermap.org/data/2.5/weather
 ```
+
+Cities are configured in `config.php` (`locations`: name stored in the database => OpenWeatherMap city ID). The first city is the default one on the page. City IDs can be looked up in the `id` field of an API response for `?q=City,CountryCode`.
 
 Make sure `.env` is not served by the web server (the hosting setup returns 403 for dotfiles; otherwise add a deny rule to `.htaccess`).
 
@@ -112,9 +114,12 @@ Fetch data at the start of every hour and archive old JSON files once an hour. A
 
 All endpoints are served by `api.php?action=...` and return JSON. On a database error the API responds with HTTP 500 and `{"error": "Błąd bazy danych"}` (details go to the server error log).
 
+All actions accept an optional `location` parameter (a city name from `config.php`, default: the first one); an unknown city returns HTTP 400.
+
 | Action | Parameters | Returns |
 |---|---|---|
-| `current` | – | Latest measurement plus `historical_comparison` with the same hour one year ago |
+| `locations` | – | List of available cities |
+| `current` | – | Latest measurement plus `historical_comparison` with the same hour one year ago and `collected_since` (first measurement) |
 | `chart_data` | `date` (`YYYY-MM-DD`, default today) | All measurements for the given day |
 | `year_stats` | `year` (default current) | Max/Min temperature and pressure for the year, with the date of their first occurrence |
 | `yearly_trend` | – | Daily Max/Min temperature for the last 12 months |
@@ -123,4 +128,5 @@ All endpoints are served by `api.php?action=...` and return JSON. On a database 
 
 ## ⚠️ Known Limitations
 
+* Measurement times are stored in server local time (Europe/Warsaw), so only cities in the same time zone (CET/CEST) are supported without changes.
 * Timestamps are stored in server local time (Europe/Warsaw). On the switch to winter time the hour 02:00 occurs twice, so the database keeps only one of the two measurements; both raw JSON files are kept in `archive/` (the second one with a `-CET` suffix).

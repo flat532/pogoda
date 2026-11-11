@@ -204,21 +204,6 @@
         .tile-icon.i-hum   { background: rgba(57, 135, 229, 0.16); color: #6fa8f0; }
         .tile-icon.i-press { background: rgba(25, 158, 112, 0.16); color: #35c791; }
 
-        .tile-val {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: var(--ink-1);
-            line-height: 1.15;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .tile-label {
-            font-size: 0.68rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.9px;
-        }
-
         /* Historical comparison note */
         .hist-note {
             margin-top: 1.1rem;
@@ -388,6 +373,8 @@
             color: var(--ink-2);
         }
 
+        .city-switch { display: inline-flex; }
+
         .lang-switch .nav-link {
             padding: 2px 8px !important;
             font-size: 0.7rem;
@@ -493,8 +480,8 @@
             .live-mini { padding: 4px 10px; font-size: 0.76rem; }
         }
 
-        /* wąskie telefony: sama ikona marki, żeby zmieścił się przełącznik języka */
-        @media (max-width: 440px) {
+        /* wąskie telefony: sama ikona marki, żeby zmieścił się przełącznik języka (3 przyciski) */
+        @media (max-width: 480px) {
             .brand-text { display: none; }
         }
     </style>
@@ -532,6 +519,7 @@
         <section class="hero">
             <div class="hero-grid">
                 <div class="hero-now">
+                    <div class="nav nav-pills city-switch mb-2 d-none" id="citySwitch" role="group"></div>
                     <div class="hero-label"><span class="live-dot" aria-hidden="true"></span> <span data-i18n="nowIn">Teraz w Gliwicach</span></div>
                     <div class="hero-temp" id="navTemp">--</div>
                     <div class="hero-sub" id="navTime">--:--</div>
@@ -560,6 +548,9 @@
 
             <!-- Baner z porównaniem historycznym -->
             <div id="historicalInfo" class="hist-note d-none" role="alert"></div>
+
+            <!-- Informacja o dacie startu zbierania danych (miasta z danymi krótszymi niż rok) -->
+            <div id="sinceInfo" class="hist-note d-none"></div>
         </section>
 
         <div class="row">
@@ -912,6 +903,20 @@
         const COLOR_PRESS = 'rgb(25, 158, 112)';    // #199e70
         const COLOR_AVG   = 'rgb(201, 133, 0)';     // #c98500
 
+        // Bieżące miasto (klucz z api.php?action=locations); null = domyślne miasto API
+        let currentCity = null;
+
+        // Zapytanie do API dla bieżącego miasta. Odpowiedź, która przyjdzie po zmianie
+        // miasta, nigdy się nie rozwiązuje — nie nadpisze danych nowego miasta.
+        async function api(params) {
+            const city = currentCity;
+            const query = city ? `${params}&location=${encodeURIComponent(city)}` : params;
+            const response = await fetch(`api.php?${query}`);
+            const data = await response.json();
+            if (city !== currentCity) return new Promise(() => {});
+            return data;
+        }
+
         let tempChartInstance = null;
         let pressChartInstance = null;
         let yearChartInstance = null;
@@ -942,36 +947,53 @@
 
         async function loadCurrentStatus() {
             try {
-                const response = await fetch('api.php?action=current');
-                const data = await response.json();
+                const data = await api('action=current');
+                const histInfo = document.getElementById('historicalInfo');
+                const sinceInfo = document.getElementById('sinceInfo');
 
-                if (data) {
-                    document.getElementById('navTemp').innerText = parseFloat(data.temperature).toFixed(1) + "°C";
-                    document.getElementById('navHum').innerText = data.humidity + "%";
-                    document.getElementById('navPress').innerText = data.pressure + " hPa";
-                    document.getElementById('navTime').innerText = t('lastReading', { time: data.measurement_datetime.substring(11, 16) });
+                if (!data || data.error) {
+                    ['navTemp', 'navHum', 'navPress', 'navTempMobile', 'navHumMobile'].forEach(id => document.getElementById(id).innerText = '--');
+                    ['navTime', 'navTimeMobile'].forEach(id => document.getElementById(id).innerText = '--:--');
+                    histInfo.classList.add('d-none');
+                    sinceInfo.classList.add('d-none');
+                    return;
+                }
 
-                    document.getElementById('navTempMobile').innerText = parseFloat(data.temperature).toFixed(1) + "°C";
-                    document.getElementById('navHumMobile').innerText = data.humidity + "%";
-                    document.getElementById('navTimeMobile').innerText = data.measurement_datetime.substring(11, 16);
+                // Dane krótsze niż rok: wyjaśnij, czemu brakuje rekordów i porównań
+                const since = data.collected_since ? new Date(data.collected_since.replace(' ', 'T')) : null;
+                const yearAgo = new Date();
+                yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+                if (since && since > yearAgo) {
+                    sinceInfo.textContent = t('collectingSince', { date: formatHeaderDate(since) });
+                    sinceInfo.classList.remove('d-none');
+                } else {
+                    sinceInfo.classList.add('d-none');
+                }
 
-                    const histInfo = document.getElementById('historicalInfo');
-                    if (data.historical_comparison && data.historical_comparison.available) {
-                        const diff = data.historical_comparison.diff;
-                        const diffAbs = Math.abs(diff).toFixed(1);
-                        const pastTemp = data.historical_comparison.past_temp.toFixed(1);
+                document.getElementById('navTemp').innerText = parseFloat(data.temperature).toFixed(1) + "°C";
+                document.getElementById('navHum').innerText = data.humidity + "%";
+                document.getElementById('navPress').innerText = data.pressure + " hPa";
+                document.getElementById('navTime').innerText = t('lastReading', { time: data.measurement_datetime.substring(11, 16) });
 
-                        let key;
-                        if (Math.abs(diff) < 0.1) key = 'histSame';
-                        else if (diff > 0) key = 'histColder';
-                        else key = 'histWarmer';
-                        const msg = t(key, { diff: diffAbs, temp: pastTemp });
+                document.getElementById('navTempMobile').innerText = parseFloat(data.temperature).toFixed(1) + "°C";
+                document.getElementById('navHumMobile').innerText = data.humidity + "%";
+                document.getElementById('navTimeMobile').innerText = data.measurement_datetime.substring(11, 16);
 
-                        histInfo.innerHTML = msg;
-                        histInfo.classList.remove('d-none');
-                    } else {
-                        histInfo.classList.add('d-none');
-                    }
+                if (data.historical_comparison && data.historical_comparison.available) {
+                    const diff = data.historical_comparison.diff;
+                    const diffAbs = Math.abs(diff).toFixed(1);
+                    const pastTemp = data.historical_comparison.past_temp.toFixed(1);
+
+                    let key;
+                    if (Math.abs(diff) < 0.1) key = 'histSame';
+                    else if (diff > 0) key = 'histColder';
+                    else key = 'histWarmer';
+                    const msg = t(key, { diff: diffAbs, temp: pastTemp });
+
+                    histInfo.innerHTML = msg;
+                    histInfo.classList.remove('d-none');
+                } else {
+                    histInfo.classList.add('d-none');
                 }
             } catch (e) { console.error("Błąd pobierania current status:", e); }
         }
@@ -982,8 +1004,7 @@
             document.getElementById('tempHeader').innerText = `${t('temperature')} · ${formatHeaderDate(date)}`;
             document.getElementById('pressHeader').innerText = `${t('pressure')} · ${formatHeaderDate(date)}`;
 
-            const response = await fetch(`api.php?action=chart_data&date=${date}`);
-            const data = await response.json();
+            const data = await api(`action=chart_data&date=${date}`);
 
             if (!data || data.length === 0) {
                 resetDayView();
@@ -1011,9 +1032,11 @@
 
         async function loadYearlyTrend() {
             try {
-                const response = await fetch('api.php?action=yearly_trend');
-                const data = await response.json();
-                if (!data || data.length === 0) return;
+                const data = await api('action=yearly_trend');
+                if (!data || data.length === 0) {
+                    if (yearChartInstance) { yearChartInstance.destroy(); yearChartInstance = null; }
+                    return;
+                }
 
                 const labels = data.map(e => e.date);
                 const maxTemps = data.map(e => parseFloat(e.max_temp));
@@ -1045,8 +1068,7 @@
 
         async function loadMonthlyStats() {
             try {
-                const response = await fetch('api.php?action=monthly_stats');
-                const data = await response.json();
+                const data = await api('action=monthly_stats');
                 const leftBody  = document.getElementById('monthlyTableLeft');
                 const rightBody = document.getElementById('monthlyTableRight');
                 leftBody.innerHTML = '';
@@ -1085,12 +1107,16 @@
 
             const fetchAndFill = async (year, prefix, tabItemId, avgItemId) => {
                 try {
-                    const response = await fetch(`api.php?action=year_stats&year=${year}`);
-                    const stats = await response.json();
+                    const stats = await api(`action=year_stats&year=${year}`);
+                    const hasData = !!(stats && stats.max_temp);
 
-                    if (!stats || !stats.max_temp) {
-                        if (tabItemId) document.getElementById(tabItemId).style.display = 'none';
-                        if (avgItemId)  document.getElementById(avgItemId).style.display  = 'none';
+                    // Zakładki lat bez danych ukryte; po zmianie miasta mogą wrócić
+                    if (tabItemId) document.getElementById(tabItemId).style.display = hasData ? '' : 'none';
+                    if (avgItemId)  document.getElementById(avgItemId).style.display  = hasData ? '' : 'none';
+
+                    if (!hasData) {
+                        ['Max', 'Min', 'MaxPress', 'MinPress', 'MaxDate', 'MinDate', 'MaxPressDate', 'MinPressDate']
+                            .forEach(suffix => document.getElementById(prefix + suffix).innerText = '--');
                         return;
                     }
 
@@ -1137,10 +1163,9 @@
         }
 
         function resetDayView() {
-            document.getElementById('dayMin').innerText = "--";
-            document.getElementById('dayMax').innerText = "--";
-            if (tempChartInstance) tempChartInstance.destroy();
-            if (pressChartInstance) pressChartInstance.destroy();
+            ['dayMin', 'dayMax', 'detPressure', 'detWind', 'detRain'].forEach(id => document.getElementById(id).innerText = '--');
+            if (tempChartInstance) { tempChartInstance.destroy(); tempChartInstance = null; }
+            if (pressChartInstance) { pressChartInstance.destroy(); pressChartInstance = null; }
         }
 
         async function loadAvgStats(range, btnElement) {
@@ -1150,8 +1175,7 @@
             }
 
             try {
-                const response = await fetch(`api.php?action=avg_stats&range=${range}`);
-                const data = await response.json();
+                const data = await api(`action=avg_stats&range=${range}`);
                 if (!data) return;
 
                 const labels = data.map(e => {
@@ -1203,25 +1227,95 @@
             } catch (e) { console.error('Błąd pobierania średnich temperatur:', e); }
         }
 
-        // dane niezależne od wybranej daty — ładowane raz (i ponownie po zmianie języka)
-        function loadAll() {
+        // Wszystkie sekcje — przy starcie oraz po zmianie miasta lub języka
+        async function loadAll() {
             loadCurrentStatus();
-            loadYearlyStats();
             loadYearlyTrend();
             loadMonthlyStats();
             loadData();
+            await loadYearlyStats();
+
+            // Aktywna zakładka roku mogła zniknąć (nowe miasto bez danych z tego roku)
+            const activeRecord = document.querySelector('#recordsTab .nav-link.active');
+            if (activeRecord.closest('li').style.display === 'none') {
+                bootstrap.Tab.getOrCreateInstance(document.getElementById('curr-year-tab')).show();
+            }
+            let activeAvg = document.querySelector('#avgTabs .nav-link.active');
+            if (activeAvg.closest('li').style.display === 'none') {
+                activeAvg = document.querySelector('#avgTabs [data-range="today"]');
+            }
+            loadAvgStats(activeAvg.dataset.range, activeAvg);
         }
 
-        applyTranslations();
-        renderLangSwitch(document.getElementById('langSwitch'), () => {
-            loadAll();
-            const activeAvg = document.querySelector('#avgTabs .nav-link.active');
-            loadAvgStats(activeAvg.dataset.range, activeAvg);
-            updateDSTCountdown();
-        });
+        // Miasto: ?city= w linku → zapamiętany wybór → pierwsze z listy
+        function pickCity(cities) {
+            const fromUrl = new URLSearchParams(location.search).get('city');
+            const match = cities.find(c => c.toLowerCase() === (fromUrl || '').toLowerCase());
+            if (match) return match;
+            try {
+                const saved = localStorage.getItem('city');
+                if (cities.includes(saved)) return saved;
+            } catch (e) { }
+            return cities[0] ?? null;
+        }
 
-        loadAll();
-        loadAvgStats('today', document.querySelector('[data-range="today"]'));
+        function setCity(city) {
+            currentCity = city;
+            setI18nCity(city);
+            try { localStorage.setItem('city', city); } catch (e) { }
+
+            // Link z ?city= ma pokazywać aktualny wybór
+            const url = new URL(location.href);
+            if (url.searchParams.has('city')) {
+                url.searchParams.set('city', city);
+                history.replaceState(null, '', url);
+            }
+        }
+
+        function renderCitySwitch(cities) {
+            const container = document.getElementById('citySwitch');
+            container.classList.toggle('d-none', cities.length < 2);
+            container.setAttribute('aria-label', t('citySwitch'));
+            container.innerHTML = '';
+            cities.forEach(city => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'nav-link' + (city === currentCity ? ' active' : '');
+                btn.textContent = cityName(city);
+                btn.setAttribute('aria-pressed', city === currentCity);
+                btn.addEventListener('click', () => {
+                    if (city === currentCity) return;
+                    setCity(city);
+                    applyTranslations();
+                    renderCitySwitch(cities);
+                    loadAll();
+                });
+                container.appendChild(btn);
+            });
+        }
+
+        async function init() {
+            let cities = [];
+            try {
+                cities = await (await fetch('api.php?action=locations')).json();
+            } catch (e) { console.error('Błąd pobierania listy miast:', e); }
+            if (!Array.isArray(cities)) cities = [];
+
+            currentCity = pickCity(cities);
+            setI18nCity(currentCity);
+
+            applyTranslations();
+            renderCitySwitch(cities);
+            renderLangSwitch(document.getElementById('langSwitch'), () => {
+                renderCitySwitch(cities);
+                loadAll();
+                updateDSTCountdown();
+            });
+
+            loadAll();
+        }
+
+        init();
 
         // auto-odświeżanie aktualnych warunków co 5 minut
         setInterval(loadCurrentStatus, 5 * 60 * 1000);
