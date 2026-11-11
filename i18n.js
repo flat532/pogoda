@@ -66,7 +66,6 @@ const I18N = {
         days: { one: 'dzień', few: 'dni', many: 'dni', other: 'dni' },
         hoursShort: 'godz',
         minutesShort: 'min',
-        secondsShort: 's',
 
         footerAir: 'jakość powietrza: czujnik paczkomatu InPost (dane orientacyjne)',
         footer: 'Stacja Pogodowa {city} · dane: OpenWeatherMap · odczyt automatyczny co godzinę'
@@ -133,7 +132,6 @@ const I18N = {
         days: { one: 'day', other: 'days' },
         hoursShort: 'h',
         minutesShort: 'min',
-        secondsShort: 's',
 
         footerAir: 'air quality: InPost parcel locker sensor (indicative data)',
         footer: '{city} Weather Station · data: OpenWeatherMap · updated automatically every hour'
@@ -200,7 +198,6 @@ const I18N = {
         days: { one: 'dag', other: 'dagen' },
         hoursShort: 'u',
         minutesShort: 'min',
-        secondsShort: 's',
 
         footerAir: 'luchtkwaliteit: sensor van InPost-pakketautomaat (indicatieve gegevens)',
         footer: 'Weerstation {city} · gegevens: OpenWeatherMap · elk uur automatisch bijgewerkt'

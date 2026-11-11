@@ -1520,7 +1520,7 @@
                     ? { date: fullDate, from: '02:00', to: '03:00' }
                     : { date: fullDate, from: '03:00', to: '02:00' });
 
-                document.getElementById('dstUnits').innerHTML = ['d', 'h', 'm', 's']
+                document.getElementById('dstUnits').innerHTML = ['d', 'h', 'm']
                     .map(u => `<span class="dst-unit"><b data-u="${u}">--</b><small data-u-label="${u}"></small></span>`).join('');
             }
 
@@ -1528,10 +1528,9 @@
             const values = {
                 d: Math.floor(totalSec / 86400),
                 h: Math.floor(totalSec % 86400 / 3600),
-                m: Math.floor(totalSec % 3600 / 60),
-                s: totalSec % 60
+                m: Math.floor(totalSec % 3600 / 60)
             };
-            const labels = { d: plural('days', values.d), h: t('hoursShort'), m: t('minutesShort'), s: t('secondsShort') };
+            const labels = { d: plural('days', values.d), h: t('hoursShort'), m: t('minutesShort') };
 
             for (const u of Object.keys(values)) {
                 const el = box.querySelector(`[data-u="${u}"]`);
