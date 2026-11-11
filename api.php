@@ -177,6 +177,21 @@ try {
             $stmtSince->execute($loc);
             $currentData['collected_since'] = $stmtSince->fetchColumn();
 
+            // Jakość powietrza z paczkomatu InPost (tylko świeży odczyt, max 3 godziny)
+            $stmtAir = $pdo->prepare("SELECT point, air_index_level, measurement_datetime, raw_json FROM air_quality
+                                      WHERE location = :location AND source = 'inpost' AND air_index_level IS NOT NULL
+                                        AND measurement_datetime > NOW() - INTERVAL 3 HOUR
+                                      ORDER BY measurement_datetime DESC LIMIT 1");
+            $stmtAir->execute($loc);
+            $air = $stmtAir->fetch(PDO::FETCH_ASSOC);
+            $currentData['air'] = $air ? [
+                'source' => 'inpost',
+                'point' => $air['point'],
+                'level' => $air['air_index_level'],
+                'address' => json_decode($air['raw_json'] ?? '', true)['address']['line1'] ?? null,
+                'measured_at' => $air['measurement_datetime'],
+            ] : null;
+
             // Logika porównania z rokiem ubiegłym
             $currentDate = new DateTime($currentData['measurement_datetime']);
             $pastDateTarget = (clone $currentDate)->modify('-1 year');

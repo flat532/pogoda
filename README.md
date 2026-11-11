@@ -6,6 +6,7 @@ A robust web application designed to monitor, archive, and visualize weather dat
 
 * **Multiple Cities:** Switch between collected cities (Gliwice, Amsterdam); the choice is remembered and `?city=amsterdam` links work. Amsterdam has been collected since 5 November 2026.
 * **Real-time Conditions:** Live monitoring of temperature, humidity, pressure, and last update time (auto-refreshed every 5 minutes).
+* **Air Quality (InPost):** Air quality index from the sensor of a nearby InPost parcel locker (Gliwice: `GLI01BAPP`), fetched hourly from the public InPost points API and shown as a tile next to humidity and pressure. Hidden for cities without a configured locker.
 * **Year-over-Year Comparison:** Shows how the current temperature differs from the same hour one year ago.
 * **Daily Charts:** Detailed temperature and pressure trends for any selected date, with previous/next day navigation (powered by **Chart.js**).
 * **Calendar Year Records:**
@@ -82,6 +83,23 @@ CREATE TABLE weather_data (
 );
 ```
 
+Air quality readings from InPost parcel lockers are stored in a separate table:
+
+```sql
+CREATE TABLE air_quality (
+    id INT NOT NULL AUTO_INCREMENT,
+    location VARCHAR(100) NOT NULL,
+    measurement_datetime DATETIME NOT NULL,
+    source VARCHAR(20) NOT NULL,
+    point VARCHAR(30) NOT NULL,
+    air_index_level VARCHAR(20) DEFAULT NULL,
+    raw_json TEXT DEFAULT NULL,
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY unique_air (location, source, measurement_datetime)
+);
+```
+
 ### 3. Environment Configuration
 Create a `.env` file in the project root (it is listed in `.gitignore`):
 
@@ -97,6 +115,8 @@ WEATHER_API_URL=http://api.openweathermap.org/data/2.5/weather
 ```
 
 Cities are configured in `config.php` (`locations`: name stored in the database => OpenWeatherMap city ID). The first city is the default one on the page. City IDs can be looked up in the `id` field of an API response for `?q=City,CountryCode`.
+
+Air quality lockers are configured in `config.php` (`inpost_air`: city => locker code). Lockers that report air quality have a non-null `air_index_level` in `https://api-pl-points.easypack24.net/v1/points?city=Gliwice`.
 
 Make sure `.env` is not served by the web server (the hosting setup returns 403 for dotfiles; otherwise add a deny rule to `.htaccess`).
 
@@ -119,7 +139,7 @@ All actions accept an optional `location` parameter (a city name from `config.ph
 | Action | Parameters | Returns |
 |---|---|---|
 | `locations` | – | List of available cities |
-| `current` | – | Latest measurement plus `historical_comparison` with the same hour one year ago and `collected_since` (first measurement) |
+| `current` | – | Latest measurement plus `historical_comparison` with the same hour one year ago, `collected_since` (first measurement) and `air` (latest InPost air quality reading from the last 3 hours, or `null`) |
 | `chart_data` | `date` (`YYYY-MM-DD`, default today) | All measurements for the given day |
 | `year_stats` | `year` (default current) | Max/Min temperature and pressure for the year, with the date of their first occurrence |
 | `yearly_trend` | – | Daily Max/Min temperature for the last 12 months |

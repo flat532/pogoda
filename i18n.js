@@ -28,6 +28,10 @@ const I18N = {
         temperature: 'Temperatura',
         wind: 'Wiatr',
         precipitation: 'Opady',
+        airQuality: 'Powietrze',
+        airLabel: 'Powietrze · Paczkomat {point}',
+        airTitle: 'Jakość powietrza z czujnika paczkomatu InPost {point} ({address}), odczyt {time}',
+        airLevels: { VERY_GOOD: 'Bardzo dobra', GOOD: 'Dobra', MODERATE: 'Umiarkowana', SATISFACTORY: 'Dostateczna', BAD: 'Zła', VERY_BAD: 'Bardzo zła' },
 
         histSame: 'Rok temu o tej godzinie temperatura była <strong>taka sama</strong> ({temp}°C).',
         histColder: 'Rok temu o tej godzinie było <strong>chłodniej o {diff}°C</strong> (temp: {temp}°C).',
@@ -62,6 +66,7 @@ const I18N = {
         hoursShort: 'godz',
         minutesShort: 'min',
 
+        footerAir: 'jakość powietrza: czujnik paczkomatu InPost (dane orientacyjne)',
         footer: 'Stacja Pogodowa {city} · dane: OpenWeatherMap · odczyt automatyczny co godzinę'
     },
 
@@ -88,6 +93,10 @@ const I18N = {
         temperature: 'Temperature',
         wind: 'Wind',
         precipitation: 'Precipitation',
+        airQuality: 'Air',
+        airLabel: 'Air · InPost locker {point}',
+        airTitle: 'Air quality from InPost parcel locker sensor {point} ({address}), reading {time}',
+        airLevels: { VERY_GOOD: 'Very good', GOOD: 'Good', MODERATE: 'Moderate', SATISFACTORY: 'Satisfactory', BAD: 'Poor', VERY_BAD: 'Very poor' },
 
         histSame: 'A year ago at this hour the temperature was <strong>the same</strong> ({temp}°C).',
         histColder: 'A year ago at this hour it was <strong>{diff}°C colder</strong> (temp: {temp}°C).',
@@ -122,6 +131,7 @@ const I18N = {
         hoursShort: 'h',
         minutesShort: 'min',
 
+        footerAir: 'air quality: InPost parcel locker sensor (indicative data)',
         footer: '{city} Weather Station · data: OpenWeatherMap · updated automatically every hour'
     },
 
@@ -148,6 +158,10 @@ const I18N = {
         temperature: 'Temperatuur',
         wind: 'Wind',
         precipitation: 'Neerslag',
+        airQuality: 'Lucht',
+        airLabel: 'Lucht · InPost-automaat {point}',
+        airTitle: 'Luchtkwaliteit van de sensor van InPost-pakketautomaat {point} ({address}), meting {time}',
+        airLevels: { VERY_GOOD: 'Zeer goed', GOOD: 'Goed', MODERATE: 'Matig', SATISFACTORY: 'Voldoende', BAD: 'Slecht', VERY_BAD: 'Zeer slecht' },
 
         histSame: 'Een jaar geleden was de temperatuur op dit uur <strong>hetzelfde</strong> ({temp}°C).',
         histColder: 'Een jaar geleden was het op dit uur <strong>{diff}°C kouder</strong> (temp: {temp}°C).',
@@ -182,6 +196,7 @@ const I18N = {
         hoursShort: 'u',
         minutesShort: 'min',
 
+        footerAir: 'luchtkwaliteit: sensor van InPost-pakketautomaat (indicatieve gegevens)',
         footer: 'Weerstation {city} · gegevens: OpenWeatherMap · elk uur automatisch bijgewerkt'
     }
 };

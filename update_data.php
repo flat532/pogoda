@@ -114,4 +114,47 @@ foreach ($config['locations'] as $location => $cityId) {
         echo "❌ DB Error ({$location}): " . $e->getMessage() . "<br>";
     }
 }
+
+// Jakość powietrza z paczkomatów InPost (publiczne API punktów, bez klucza)
+$airStmt = null;
+$httpContext = stream_context_create(['http' => ['timeout' => 15, 'header' => "Accept: application/json\r\n"]]);
+
+foreach ($config['inpost_air'] ?? [] as $location => $point) {
+    $raw = @file_get_contents('https://api-pl-points.easypack24.net/v1/points/' . rawurlencode($point), false, $httpContext);
+    $decoded = $raw ? json_decode($raw, true) : null;
+
+    if (!$decoded || ($decoded['name'] ?? null) !== $point) {
+        echo "❌ No InPost data for {$point} ({$location})<br>";
+        continue;
+    }
+
+    try {
+        if (!$airStmt) {
+            $pdo ??= new PDO("mysql:host={$db['host']};dbname={$db['name']};charset={$db['charset']}", $db['user'], $db['pass'], [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+            ]);
+            $airStmt = $pdo->prepare("INSERT INTO air_quality (location, measurement_datetime, source, point, air_index_level, raw_json)
+                                      VALUES (:location, :measurement_datetime, 'inpost', :point, :level, :raw_json)
+                                      ON DUPLICATE KEY UPDATE point = VALUES(point), air_index_level = VALUES(air_index_level), raw_json = VALUES(raw_json)");
+        }
+
+        $airStmt->execute([
+            'location' => $location,
+            'measurement_datetime' => $datetime,
+            'point' => $point,
+            'level' => $decoded['air_index_level'] ?? null,
+            'raw_json' => json_encode([
+                'name' => $decoded['name'],
+                'status' => $decoded['status'] ?? null,
+                'air_index_level' => $decoded['air_index_level'] ?? null,
+                'address' => $decoded['address'] ?? null,
+                'location' => $decoded['location'] ?? null,
+            ], JSON_UNESCAPED_UNICODE)
+        ]);
+
+        echo "✅ Air quality {$point}: " . ($decoded['air_index_level'] ?? 'brak') . "<br>";
+    } catch (PDOException $e) {
+        echo "❌ DB Error (air {$location}): " . $e->getMessage() . "<br>";
+    }
+}
 ?>

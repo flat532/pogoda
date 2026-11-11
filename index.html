@@ -203,6 +203,37 @@
         .tile-icon svg { width: 19px; height: 19px; }
         .tile-icon.i-hum   { background: rgba(57, 135, 229, 0.16); color: #6fa8f0; }
         .tile-icon.i-press { background: rgba(25, 158, 112, 0.16); color: #35c791; }
+        .tile-icon.i-inpost { background: #ffcd00; color: #1d1d1b; }
+
+        /* Kropka w kolorze poziomu jakości powietrza */
+        .air-dot {
+            display: inline-block;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            margin-right: 7px;
+            vertical-align: 2px;
+            background: var(--muted);
+        }
+        .air-dot.lvl-VERY_GOOD, .air-dot.lvl-GOOD { background: #35c791; }
+        .air-dot.lvl-MODERATE, .air-dot.lvl-SATISFACTORY { background: #e0b43a; }
+        .air-dot.lvl-BAD { background: #ef8a3c; }
+        .air-dot.lvl-VERY_BAD { background: #e66767; }
+
+        .tile-val {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--ink-1);
+            line-height: 1.15;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .tile-label {
+            font-size: 0.68rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.9px;
+        }
 
         /* Historical comparison note */
         .hist-note {
@@ -543,6 +574,15 @@
                             <div class="tile-label" data-i18n="pressure">Ciśnienie</div>
                         </div>
                     </div>
+                    <div class="tile d-none" id="airTile">
+                        <span class="tile-icon i-inpost" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/><path d="M3 9h9"/><path d="M3 15h9"/><path d="M12 12h9"/></svg>
+                        </span>
+                        <div>
+                            <div class="tile-val"><span class="air-dot" id="airDot"></span><span id="airLevel">--</span></div>
+                            <div class="tile-label" id="airLabel">Powietrze</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -872,8 +912,8 @@
             </div>
         </div>
 
-        <footer class="footer" data-i18n="footer">
-            Stacja Pogodowa Gliwice · dane: OpenWeatherMap · odczyt automatyczny co godzinę
+        <footer class="footer">
+            <span data-i18n="footer">Stacja Pogodowa Gliwice · dane: OpenWeatherMap · odczyt automatyczny co godzinę</span><span id="footerAir" class="d-none"> · <span data-i18n="footerAir">jakość powietrza: czujnik paczkomatu InPost (dane orientacyjne)</span></span>
         </footer>
 
     </div>
@@ -945,6 +985,24 @@
             return d.toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' });
         }
 
+        // Kafelek jakości powietrza z paczkomatu InPost; brak odczytu → ukryty
+        function renderAir(air) {
+            const tile = document.getElementById('airTile');
+            const footerAir = document.getElementById('footerAir');
+            if (!air || !air.level) {
+                tile.classList.add('d-none');
+                footerAir.classList.add('d-none');
+                return;
+            }
+            footerAir.classList.remove('d-none');
+            const levels = I18N[currentLang].airLevels;
+            document.getElementById('airDot').className = 'air-dot lvl-' + air.level;
+            document.getElementById('airLevel').textContent = (levels && levels[air.level]) || air.level;
+            document.getElementById('airLabel').textContent = t('airLabel', { point: air.point });
+            tile.title = t('airTitle', { point: air.point, address: air.address || '-', time: air.measured_at.substring(11, 16) });
+            tile.classList.remove('d-none');
+        }
+
         async function loadCurrentStatus() {
             try {
                 const data = await api('action=current');
@@ -956,8 +1014,11 @@
                     ['navTime', 'navTimeMobile'].forEach(id => document.getElementById(id).innerText = '--:--');
                     histInfo.classList.add('d-none');
                     sinceInfo.classList.add('d-none');
+                    renderAir(null);
                     return;
                 }
+
+                renderAir(data.air);
 
                 // Dane krótsze niż rok: wyjaśnij, czemu brakuje rekordów i porównań
                 const since = data.collected_since ? new Date(data.collected_since.replace(' ', 'T')) : null;

@@ -59,6 +59,12 @@ return [
     'locations' => [
         'Gliwice'   => 3099230,
         'Amsterdam' => 2759794,
+    ],
+    // Jakość powietrza z czujnika paczkomatu InPost: miasto => kod paczkomatu.
+    // Kody i dostępność odczytu: https://api-pl-points.easypack24.net/v1/points?city=Gliwice
+    // (pole air_index_level różne od null). Publiczne API, bez klucza.
+    'inpost_air' => [
+        'Gliwice' => 'GLI01BAPP',
     ]
 ];
 ?>
