@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Powietrze przy paczkomacie</title>
+    <meta name="description" content="Jakość powietrza z czujnika paczkomatu InPost — wpisz kod paczkomatu.">
+    <meta name="theme-color" content="#0a0f1c">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-0: #0a0f1c;
+            --card: #131b2b;
+            --line: rgba(148, 163, 184, 0.12);
+            --line-soft: rgba(148, 163, 184, 0.07);
+            --ink-1: #e8eef7;
+            --ink-2: #a7b4c8;
+            --muted: #6b7891;
+            --accent: #3987e5;
+            --accent-soft: rgba(57, 135, 229, 0.16);
+            --inpost: #ffcd00;
+            --radius: 16px;
+
+            /* Skala jakości powietrza (kolejność jak w polskim indeksie GIOŚ) */
+            --lvl-VERY_GOOD: #2fbf71;
+            --lvl-GOOD: #8fd14f;
+            --lvl-MODERATE: #e0c03a;
+            --lvl-SATISFACTORY: #ef8a3c;
+            --lvl-BAD: #e66767;
+            --lvl-VERY_BAD: #b45ad0;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            background:
+                radial-gradient(ellipse 55% 38% at 18% -5%, rgba(57, 135, 229, 0.13), transparent 70%),
+                radial-gradient(ellipse 45% 32% at 88% 0%, rgba(255, 205, 0, 0.06), transparent 70%),
+                var(--bg-0);
+            background-attachment: fixed;
+            min-height: 100vh;
+            font-size: 0.9rem;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            color: var(--ink-2);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        a { color: #6fa8f0; text-decoration: none; }
+        a:hover { color: #9cc4f5; }
+
+        .wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px 24px; }
+
+        /* === TOPBAR === */
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: rgba(10, 15, 28, 0.82);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-bottom: 1px solid var(--line-soft);
+        }
+        .topbar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 10px; padding-bottom: 10px; }
+
+        .brand { display: flex; align-items: center; gap: 10px; color: var(--ink-1); font-weight: 700; font-size: 1.02rem; letter-spacing: -0.2px; white-space: nowrap; }
+        .brand:hover { color: var(--ink-1); }
+        .brand small { display: block; font-size: 0.66rem; font-weight: 500; color: var(--muted); letter-spacing: 0.6px; text-transform: uppercase; }
+
+        .locker-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: var(--inpost);
+            color: #1d1d1b;
+            display: grid;
+            place-items: center;
+            flex: 0 0 auto;
+        }
+        .locker-icon svg { width: 18px; height: 18px; }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--ink-2);
+            background: rgba(255, 255, 255, 0.045);
+            border: 1px solid var(--line-soft);
+            border-radius: 30px;
+            padding: 6px 14px;
+            white-space: nowrap;
+        }
+        .back-link:hover { color: var(--ink-1); background: rgba(255, 255, 255, 0.08); }
+
+        /* === HERO / WYSZUKIWANIE === */
+        .hero {
+            background: linear-gradient(160deg, #16233c 0%, #121b2e 55%, #12202c 100%);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 1.3rem 1.4rem;
+            margin: 1rem 0;
+            box-shadow: 0 20px 50px -25px rgba(0, 0, 0, 0.7);
+        }
+
+        .label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 1.4px;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .hero h1 { margin: 4px 0 12px; font-size: clamp(1.3rem, 3.5vw, 1.7rem); font-weight: 800; letter-spacing: -0.6px; color: var(--ink-1); }
+
+        .search { display: flex; gap: 8px; max-width: 520px; }
+
+        .search input {
+            flex: 1;
+            min-width: 0;
+            font: inherit;
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--ink-1);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 10px 14px;
+            outline: none;
+        }
+        .search input::placeholder { color: var(--muted); font-weight: 500; letter-spacing: 0.3px; text-transform: none; }
+        .search input:focus { background: rgba(255, 255, 255, 0.08); border-color: rgba(57, 135, 229, 0.6); box-shadow: 0 0 0 3px rgba(57, 135, 229, 0.18); }
+
+        .btn {
+            font: inherit;
+            font-weight: 700;
+            color: #1d1d1b;
+            background: var(--inpost);
+            border: 0;
+            border-radius: 12px;
+            padding: 0 20px;
+            cursor: pointer;
+            transition: filter 0.15s;
+        }
+        .btn:hover { filter: brightness(1.08); }
+        .btn:disabled { opacity: 0.6; cursor: wait; }
+
+        .hint { margin-top: 10px; font-size: 0.76rem; color: var(--muted); }
+
+        .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+        .chips:empty { display: none; }
+        .chip {
+            font: inherit;
+            font-size: 0.74rem;
+            font-weight: 600;
+            color: var(--ink-2);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--line-soft);
+            border-radius: 20px;
+            padding: 3px 11px;
+            cursor: pointer;
+        }
+        .chip:hover { color: var(--ink-1); background: rgba(255, 255, 255, 0.09); }
+
+        /* === KARTY === */
+        .grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; margin-bottom: 16px; }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            box-shadow: 0 14px 34px -22px rgba(0, 0, 0, 0.65);
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 50px;
+            padding: 0.75rem 1.1rem;
+            border-bottom: 1px solid var(--line-soft);
+            font-weight: 600;
+            font-size: 0.78rem;
+            color: var(--ink-2);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+        .card-header svg { width: 15px; height: 15px; color: var(--accent); flex: 0 0 auto; }
+        .card-header .note { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--muted); }
+
+        .card-body { padding: 1.1rem; flex: 1; }
+
+        /* Wynik: pierścień z poziomem */
+        .result { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+
+        .ring {
+            --c: var(--muted);
+            width: 116px;
+            height: 116px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            flex: 0 0 auto;
+            border: 6px solid var(--c);
+            box-shadow: 0 0 40px -8px var(--c), inset 0 0 24px -12px var(--c);
+            color: var(--c);
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .ring svg { width: 44px; height: 44px; }
+
+        .level-name { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.8px; color: var(--ink-1); line-height: 1.1; }
+        .level-sub { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+        .advice { margin-top: 10px; font-size: 0.86rem; color: var(--ink-2); max-width: 40ch; }
+
+        .scale { margin-top: 20px; }
+        .scale-bar { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+        .scale-bar span { height: 8px; border-radius: 4px; opacity: 0.28; }
+        .scale-bar span.on { opacity: 1; box-shadow: 0 0 12px -2px currentColor; transform: scaleY(1.5); }
+        .scale-labels { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 7px; font-size: 0.62rem; color: var(--muted); text-align: center; }
+        .scale-labels span.on { color: var(--ink-1); font-weight: 700; }
+
+        .no-sensor {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            padding: 0.8rem 1rem;
+            border-radius: 12px;
+            background: var(--accent-soft);
+            border: 1px solid rgba(57, 135, 229, 0.3);
+            color: #9cc4f5;
+            font-size: 0.85rem;
+        }
+        .no-sensor svg { width: 18px; height: 18px; flex: 0 0 auto; margin-top: 1px; }
+
+        /* Szczegóły */
+        .details { list-style: none; margin: 0; padding: 0; }
+        .details li { display: flex; justify-content: space-between; gap: 16px; padding: 0.55rem 0; border-bottom: 1px solid var(--line-soft); font-size: 0.85rem; }
+        .details li:last-child { border-bottom: 0; }
+        .details span { color: var(--muted); white-space: nowrap; }
+        .details strong { color: var(--ink-1); text-align: right; font-weight: 600; }
+        .details .na { color: var(--muted); font-weight: 400; }
+
+        .code-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.15rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: var(--ink-1);
+            margin-bottom: 8px;
+        }
+        .code-badge .locker-icon { width: 28px; height: 28px; border-radius: 8px; }
+        .code-badge .locker-icon svg { width: 15px; height: 15px; }
+
+        .status { display: inline-flex; align-items: center; gap: 6px; }
+        .status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #2fd882; }
+        .status.off::before { background: #e66767; }
+
+        .photo { margin-top: 12px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line-soft); background: rgba(255, 255, 255, 0.03); }
+        .photo img { display: block; width: 100%; max-height: 220px; object-fit: cover; }
+
+        .links { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+        /* Lista pobliskich */
+        .nearby { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+        .nearby button {
+            width: 100%;
+            font: inherit;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.035);
+            border: 1px solid var(--line-soft);
+            border-radius: 12px;
+            padding: 9px 12px;
+            color: var(--ink-2);
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .nearby button:hover { background: rgba(255, 255, 255, 0.07); border-color: var(--line); }
+        .nearby button.current { border-color: rgba(255, 205, 0, 0.5); }
+        .nearby .n-main { flex: 1; min-width: 0; }
+        .nearby .n-code { font-weight: 700; color: var(--ink-1); font-size: 0.85rem; }
+        .nearby .n-addr { font-size: 0.72rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .nearby .n-side { text-align: right; font-size: 0.72rem; white-space: nowrap; }
+        .nearby .n-dist { color: var(--muted); }
+        .nearby .n-level { font-weight: 600; }
+
+        .dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; background: var(--c, var(--muted)); box-shadow: 0 0 8px -1px var(--c, transparent); }
+
+        .empty { color: var(--muted); font-size: 0.85rem; }
+
+        .error {
+            padding: 0.8rem 1rem;
+            border-radius: 12px;
+            background: rgba(230, 103, 103, 0.12);
+            border: 1px solid rgba(230, 103, 103, 0.3);
+            color: #ef8f8f;
+            margin-bottom: 16px;
+        }
+
+        .skeleton { height: 14px; border-radius: 7px; background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.09), rgba(255,255,255,0.04)); background-size: 200% 100%; animation: shimmer 1.2s infinite; margin: 10px 0; }
+        @keyframes shimmer { to { background-position: -200% 0; } }
+
+        .hidden { display: none !important; }
+
+        footer {
+            text-align: center;
+            font-size: 0.74rem;
+            color: var(--muted);
+            padding: 1.5rem 0 0.5rem;
+            border-top: 1px solid var(--line-soft);
+            margin-top: 0.5rem;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 760px) {
+            .grid { grid-template-columns: 1fr; }
+            .brand-text small { display: none; }
+        }
+
+        @media (max-width: 420px) {
+            .result { flex-direction: column; align-items: flex-start; }
+            .back-link .txt { display: none; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .skeleton { animation: none; }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="topbar">
+        <div class="wrap">
+            <a class="brand" href="./">
+                <span class="locker-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/><path d="M3 9h9"/><path d="M3 15h9"/><path d="M12 12h9"/></svg>
+                </span>
+                <span class="brand-text">Powietrze przy paczkomacie<small>Czujniki InPost · wersja testowa</small></span>
+            </a>
+            <a class="back-link" href="/">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                <span class="txt">Stacja pogodowa</span>
+            </a>
+        </div>
+    </nav>
+
+    <main class="wrap">
+        <section class="hero">
+            <div class="label">Jakość powietrza</div>
+            <h1>Sprawdź odczyt z czujnika paczkomatu</h1>
+            <form class="search" id="searchForm" autocomplete="off">
+                <input id="codeInput" name="code" type="text" maxlength="20" placeholder="Kod paczkomatu, np. GLI01BAPP"
+                    aria-label="Kod paczkomatu" spellcheck="false" autocapitalize="characters" required>
+                <button class="btn" id="searchBtn" type="submit">Sprawdź</button>
+            </form>
+            <div class="hint">Kod znajdziesz na naklejce paczkomatu, w aplikacji InPost Mobile lub na mapie paczkomatów. Czujniki ma tylko część urządzeń.</div>
+            <div class="chips" id="recent" aria-label="Ostatnio sprawdzane"></div>
+        </section>
+
+        <div class="error hidden" id="error" role="alert"></div>
+
+        <div class="grid hidden" id="resultGrid">
+            <section class="card">
+                <div class="card-header">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.8 19.6A2 2 0 1 0 14 16H2"/><path d="M17.5 8a2.5 2.5 0 1 1 2 4H2"/><path d="M9.8 4.4A2 2 0 1 1 11 8H2"/></svg>
+                    Jakość powietrza
+                    <span class="note" id="checkedAt"></span>
+                </div>
+                <div class="card-body" id="airBody"></div>
+            </section>
+
+            <section class="card">
+                <div class="card-header">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                    Paczkomat
+                </div>
+                <div class="card-body" id="pointBody"></div>
+            </section>
+        </div>
+
+        <section class="card hidden" id="nearbyCard" style="margin-bottom: 16px;">
+            <div class="card-header">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+                Paczkomaty z czujnikiem w pobliżu
+                <span class="note">do 3 km</span>
+            </div>
+            <div class="card-body">
+                <ul class="nearby" id="nearbyList"></ul>
+            </div>
+        </section>
+
+        <footer>
+            Dane: publiczne API punktów InPost (pole <code>air_index_level</code>) · odczyty orientacyjne, nie są oficjalnym pomiarem<br>
+            Strona testowa, niezwiązana z InPost · <a href="/">Stacja pogodowa</a>
+        </footer>
+    </main>
+
+    <script>
+        // Poziomy w kolejności od najlepszego (jak w polskim indeksie jakości powietrza)
+        const LEVELS = {
+            VERY_GOOD:    { name: 'Bardzo dobra', short: 'B. dobra', advice: 'Idealne warunki — śmiało na spacer, rower czy bieganie.' },
+            GOOD:         { name: 'Dobra', short: 'Dobra', advice: 'Dobre warunki do aktywności na świeżym powietrzu.' },
+            MODERATE:     { name: 'Umiarkowana', short: 'Umiark.', advice: 'Warunki akceptowalne. Osoby wrażliwe mogą odczuć lekki dyskomfort przy dłuższym wysiłku.' },
+            SATISFACTORY: { name: 'Dostateczna', short: 'Dostat.', advice: 'Osoby wrażliwe (astma, choroby serca) powinny ograniczyć dłuższy wysiłek na zewnątrz.' },
+            BAD:          { name: 'Zła', short: 'Zła', advice: 'Ogranicz przebywanie na zewnątrz, szczególnie jeśli należysz do grupy wrażliwej.' },
+            VERY_BAD:     { name: 'Bardzo zła', short: 'B. zła', advice: 'Unikaj wychodzenia i wietrzenia mieszkania, jeśli nie musisz.' }
+        };
+        const ORDER = Object.keys(LEVELS);
+        const levelColor = (lvl) => `var(--lvl-${lvl})`;
+
+        const LOCKER_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/><path d="M3 9h9"/><path d="M3 15h9"/><path d="M12 12h9"/></svg>';
+        const ICONS = {
+            good: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>',
+            mid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.8 19.6A2 2 0 1 0 14 16H2"/><path d="M17.5 8a2.5 2.5 0 1 1 2 4H2"/><path d="M9.8 4.4A2 2 0 1 1 11 8H2"/></svg>',
+            bad: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>',
+            none: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>'
+        };
+
+        const $ = (id) => document.getElementById(id);
+        const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+        let currentCode = null;
+        let requestId = 0;
+
+        // --- Ostatnio sprawdzane (tylko w tej przeglądarce) ---
+        function getRecent() {
+            try { return JSON.parse(localStorage.getItem('inpostRecent')) || []; } catch (e) { return []; }
+        }
+        function saveRecent(code) {
+            const list = [code, ...getRecent().filter((c) => c !== code)].slice(0, 6);
+            try { localStorage.setItem('inpostRecent', JSON.stringify(list)); } catch (e) { }
+            renderRecent();
+        }
+        function renderRecent() {
+            $('recent').innerHTML = getRecent().map((c) => `<button type="button" class="chip" data-code="${esc(c)}">${esc(c)}</button>`).join('');
+        }
+        $('recent').addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-code]');
+            if (btn) check(btn.dataset.code);
+        });
+
+        // --- Renderowanie ---
+        function renderAir(p) {
+            const lvl = p.air_index_level;
+            if (!lvl || !LEVELS[lvl]) {
+                $('airBody').innerHTML = `<div class="no-sensor">${ICONS.none}<div>Ten paczkomat <strong>nie podaje odczytu jakości powietrza</strong> — prawdopodobnie nie ma czujnika. Sprawdź paczkomaty z czujnikiem w pobliżu poniżej.</div></div>`;
+                return;
+            }
+            const info = LEVELS[lvl];
+            const idx = ORDER.indexOf(lvl);
+            const icon = idx <= 1 ? ICONS.good : (idx <= 3 ? ICONS.mid : ICONS.bad);
+            $('airBody').innerHTML = `
+                <div class="result">
+                    <div class="ring" style="--c:${levelColor(lvl)}">${icon}</div>
+                    <div>
+                        <div class="label">Teraz przy ${esc(p.name)}</div>
+                        <div class="level-name">${info.name}</div>
+                        <div class="advice">${info.advice}</div>
+                    </div>
+                </div>
+                <div class="scale" aria-hidden="true">
+                    <div class="scale-bar">${ORDER.map((l) => `<span class="${l === lvl ? 'on' : ''}" style="background:${levelColor(l)};color:${levelColor(l)}"></span>`).join('')}</div>
+                    <div class="scale-labels">${ORDER.map((l) => `<span class="${l === lvl ? 'on' : ''}">${LEVELS[l].short}</span>`).join('')}</div>
+                </div>`;
+        }
+
+        // Data uruchomienia: API zwykle jej nie podaje (pole location_date jest puste)
+        function formatLaunchDate(value) {
+            if (!value) return '<em class="na">brak danych w API</em>';
+            const d = new Date(value);
+            return isNaN(d) ? esc(value) : d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' });
+        }
+
+        function renderPoint(p) {
+            const lat = p.location?.latitude, lon = p.location?.longitude;
+            const operating = p.status === 'Operating';
+            const rows = [
+                ['Adres', [p.address?.line1, p.address?.line2].filter(Boolean).map(esc).join('<br>')],
+                ['Lokalizacja', esc(p.location_description)],
+                ['Status', `<span class="status ${operating ? '' : 'off'}">${operating ? 'Działa' : esc(p.status || 'nieznany')}</span>`],
+                ['Umiejscowienie', p.location_type === 'Outdoor' ? 'Na zewnątrz' : (p.location_type === 'Indoor' ? 'W budynku' : esc(p.location_type))],
+                ['Godziny', esc(p.opening_hours)],
+                ['Uruchomiony', formatLaunchDate(p.location_date)],
+                ['Kod oddziału', esc(p.agency)]
+            ].filter(([, v]) => v);
+
+            const links = (lat && lon) ? `
+                <div class="links">
+                    <a class="back-link" href="https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=17/${lat}/${lon}" target="_blank" rel="noopener">Mapa OSM ↗</a>
+                    <a class="back-link" href="https://www.google.com/maps/search/?api=1&query=${lat},${lon}" target="_blank" rel="noopener">Google Maps ↗</a>
+                </div>` : '';
+
+            $('pointBody').innerHTML = `
+                <div class="code-badge"><span class="locker-icon" aria-hidden="true">${LOCKER_SVG}</span>${esc(p.name)}</div>
+                <ul class="details">${rows.map(([k, v]) => `<li><span>${k}</span><strong>${v}</strong></li>`).join('')}</ul>
+                ${links}
+                ${p.image_url ? `<div class="photo"><img src="${esc(p.image_url)}" alt="Zdjęcie paczkomatu ${esc(p.name)}" loading="lazy" onerror="this.parentElement.remove()"></div>` : ''}`;
+        }
+
+        async function loadNearby(p, id) {
+            const lat = p.location?.latitude, lon = p.location?.longitude;
+            if (!lat || !lon) { $('nearbyCard').classList.add('hidden'); return; }
+            $('nearbyCard').classList.remove('hidden');
+            $('nearbyList').innerHTML = '<li class="skeleton"></li><li class="skeleton"></li>';
+            try {
+                const list = await (await fetch(`api.php?action=nearby&lat=${lat}&lon=${lon}`)).json();
+                if (id !== requestId) return;
+                if (!Array.isArray(list) || list.length === 0) {
+                    $('nearbyList').innerHTML = '<li class="empty">Brak paczkomatów z czujnikiem w promieniu 3 km.</li>';
+                    return;
+                }
+                $('nearbyList').innerHTML = list.map((n) => {
+                    const info = LEVELS[n.air_index_level];
+                    const dist = n.distance < 1000 ? `${n.distance} m` : `${(n.distance / 1000).toFixed(1).replace('.', ',')} km`;
+                    return `<li><button type="button" data-code="${esc(n.name)}" class="${n.name === currentCode ? 'current' : ''}">
+                        <span class="dot" style="--c:${levelColor(n.air_index_level)}"></span>
+                        <span class="n-main"><div class="n-code">${esc(n.name)}</div><div class="n-addr">${esc(n.address?.line1)}</div></span>
+                        <span class="n-side"><div class="n-level" style="color:${levelColor(n.air_index_level)}">${info ? info.name : esc(n.air_index_level)}</div><div class="n-dist">${n.distance === 0 ? 'ten' : dist}</div></span>
+                    </button></li>`;
+                }).join('');
+            } catch (e) {
+                if (id === requestId) $('nearbyList').innerHTML = '<li class="empty">Nie udało się pobrać pobliskich paczkomatów.</li>';
+            }
+        }
+        $('nearbyList').addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-code]');
+            if (btn) { check(btn.dataset.code); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        });
+
+        function showError(msg) {
+            $('error').textContent = msg;
+            $('error').classList.remove('hidden');
+            $('resultGrid').classList.add('hidden');
+            $('nearbyCard').classList.add('hidden');
+        }
+
+        // --- Sprawdzenie paczkomatu ---
+        async function check(rawCode) {
+            const code = String(rawCode || '').trim().toUpperCase();
+            if (!/^[A-Z0-9-]{3,20}$/.test(code)) {
+                showError('Kod paczkomatu to litery i cyfry, np. GLI01BAPP.');
+                return;
+            }
+            const id = ++requestId;
+            currentCode = code;
+            $('codeInput').value = code;
+            $('searchBtn').disabled = true;
+            $('error').classList.add('hidden');
+
+            const url = new URL(location.href);
+            url.searchParams.set('code', code);
+            history.replaceState(null, '', url);
+
+            try {
+                const res = await fetch(`api.php?action=point&code=${encodeURIComponent(code)}`);
+                const p = await res.json();
+                if (id !== requestId) return;
+                if (!res.ok || p.error) {
+                    showError(res.status === 404 ? `Nie znaleziono paczkomatu ${code}. Sprawdź, czy kod jest poprawny.` : (p.error || 'Błąd pobierania danych.'));
+                    return;
+                }
+                renderAir(p);
+                renderPoint(p);
+                $('checkedAt').textContent = 'odczyt ' + new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+                $('resultGrid').classList.remove('hidden');
+                document.title = `${p.name} · Powietrze przy paczkomacie`;
+                saveRecent(p.name);
+                loadNearby(p, id);
+            } catch (e) {
+                if (id === requestId) showError('Brak połączenia z serwerem. Spróbuj ponownie.');
+            } finally {
+                if (id === requestId) $('searchBtn').disabled = false;
+            }
+        }
+
+        $('searchForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            check($('codeInput').value);
+        });
+
+        renderRecent();
+        const initial = new URLSearchParams(location.search).get('code');
+        if (initial) check(initial);
+    </script>
+</body>
+
+</html>
