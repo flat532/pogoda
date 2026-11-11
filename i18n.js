@@ -33,9 +33,20 @@ const I18N = {
         airTitle: 'Jakość powietrza z czujnika paczkomatu InPost {point} ({address}), odczyt {time}',
         airLevels: { VERY_GOOD: 'Bardzo dobra', GOOD: 'Dobra', MODERATE: 'Umiarkowana', SATISFACTORY: 'Dostateczna', BAD: 'Zła', VERY_BAD: 'Bardzo zła' },
 
-        histSame: 'Rok temu o tej godzinie temperatura była <strong>taka sama</strong> ({temp}°C).',
-        histColder: 'Rok temu o tej godzinie było <strong>chłodniej o {diff}°C</strong> (temp: {temp}°C).',
-        histWarmer: 'Rok temu o tej godzinie było <strong>cieplej o {diff}°C</strong> (temp: {temp}°C).',
+
+        feelsLike: 'Odczuwalna {temp}°C',
+        histChipWarmer: '{diff}°C cieplej niż rok temu',
+        histChipColder: '{diff}°C chłodniej niż rok temu',
+        histChipSame: 'Tak samo jak rok temu',
+        histChipTitle: 'Rok temu o tej godzinie: {temp}°C',
+
+        airPollution: 'Jakość powietrza',
+        aqiTileLabel: 'AQI {aqi} · PM2.5 {pm}',
+        aqiLevels: { 1: 'Dobra', 2: 'Zadowalająca', 3: 'Umiarkowana', 4: 'Zła', 5: 'Bardzo zła' },
+        range12m: '12 mies.',
+        whoLimit: 'Norma WHO ({period})',
+        whoPct: '{pct}% normy WHO',
+        whoNote: 'Paski: stężenie względem norm WHO (2021). Indeks AQI 1–5 wg OpenWeatherMap.',
 
         selectedDay: 'Wybrany dzień',
         prevDay: 'Poprzedni dzień',
@@ -99,9 +110,20 @@ const I18N = {
         airTitle: 'Air quality from InPost parcel locker sensor {point} ({address}), reading {time}',
         airLevels: { VERY_GOOD: 'Very good', GOOD: 'Good', MODERATE: 'Moderate', SATISFACTORY: 'Satisfactory', BAD: 'Poor', VERY_BAD: 'Very poor' },
 
-        histSame: 'A year ago at this hour the temperature was <strong>the same</strong> ({temp}°C).',
-        histColder: 'A year ago at this hour it was <strong>{diff}°C colder</strong> (temp: {temp}°C).',
-        histWarmer: 'A year ago at this hour it was <strong>{diff}°C warmer</strong> (temp: {temp}°C).',
+
+        feelsLike: 'Feels like {temp}°C',
+        histChipWarmer: '{diff}°C warmer than a year ago',
+        histChipColder: '{diff}°C colder than a year ago',
+        histChipSame: 'Same as a year ago',
+        histChipTitle: 'A year ago at this hour: {temp}°C',
+
+        airPollution: 'Air quality',
+        aqiTileLabel: 'AQI {aqi} · PM2.5 {pm}',
+        aqiLevels: { 1: 'Good', 2: 'Fair', 3: 'Moderate', 4: 'Poor', 5: 'Very poor' },
+        range12m: '12 months',
+        whoLimit: 'WHO guideline ({period})',
+        whoPct: '{pct}% of the WHO guideline',
+        whoNote: 'Bars: concentration relative to WHO guidelines (2021). AQI 1–5 as defined by OpenWeatherMap.',
 
         selectedDay: 'Selected day',
         prevDay: 'Previous day',
@@ -165,9 +187,20 @@ const I18N = {
         airTitle: 'Luchtkwaliteit van de sensor van InPost-pakketautomaat {point} ({address}), meting {time}',
         airLevels: { VERY_GOOD: 'Zeer goed', GOOD: 'Goed', MODERATE: 'Matig', SATISFACTORY: 'Voldoende', BAD: 'Slecht', VERY_BAD: 'Zeer slecht' },
 
-        histSame: 'Een jaar geleden was de temperatuur op dit uur <strong>hetzelfde</strong> ({temp}°C).',
-        histColder: 'Een jaar geleden was het op dit uur <strong>{diff}°C kouder</strong> (temp: {temp}°C).',
-        histWarmer: 'Een jaar geleden was het op dit uur <strong>{diff}°C warmer</strong> (temp: {temp}°C).',
+
+        feelsLike: 'Voelt als {temp}°C',
+        histChipWarmer: '{diff}°C warmer dan een jaar geleden',
+        histChipColder: '{diff}°C kouder dan een jaar geleden',
+        histChipSame: 'Hetzelfde als een jaar geleden',
+        histChipTitle: 'Een jaar geleden op dit uur: {temp}°C',
+
+        airPollution: 'Luchtkwaliteit',
+        aqiTileLabel: 'AQI {aqi} · PM2.5 {pm}',
+        aqiLevels: { 1: 'Goed', 2: 'Redelijk', 3: 'Matig', 4: 'Slecht', 5: 'Zeer slecht' },
+        range12m: '12 maanden',
+        whoLimit: 'WHO-richtlijn ({period})',
+        whoPct: '{pct}% van de WHO-richtlijn',
+        whoNote: 'Balken: concentratie ten opzichte van de WHO-richtlijnen (2021). AQI 1–5 volgens OpenWeatherMap.',
 
         selectedDay: 'Geselecteerde dag',
         prevDay: 'Vorige dag',
