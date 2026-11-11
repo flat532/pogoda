@@ -60,11 +60,13 @@ const I18N = {
         chartMinTemp: 'Min temp (°C)',
         chartAvgTemp: 'Średnia temp (°C)',
 
-        dstSummer: 'Do zmiany na czas letni:',
-        dstWinter: 'Do zmiany na czas zimowy:',
+        dstSummer: 'Do zmiany na czas letni',
+        dstWinter: 'Do zmiany na czas zimowy',
+        dstWhen: 'Zmiana czasu: {date}, zegarki z {from} na {to}',
         days: { one: 'dzień', few: 'dni', many: 'dni', other: 'dni' },
         hoursShort: 'godz',
         minutesShort: 'min',
+        secondsShort: 's',
 
         footerAir: 'jakość powietrza: czujnik paczkomatu InPost (dane orientacyjne)',
         footer: 'Stacja Pogodowa {city} · dane: OpenWeatherMap · odczyt automatyczny co godzinę'
@@ -125,11 +127,13 @@ const I18N = {
         chartMinTemp: 'Min temp (°C)',
         chartAvgTemp: 'Avg temp (°C)',
 
-        dstSummer: 'Until summer time:',
-        dstWinter: 'Until winter time:',
+        dstSummer: 'Until summer time',
+        dstWinter: 'Until winter time',
+        dstWhen: 'Clock change: {date}, clocks go from {from} to {to}',
         days: { one: 'day', other: 'days' },
         hoursShort: 'h',
         minutesShort: 'min',
+        secondsShort: 's',
 
         footerAir: 'air quality: InPost parcel locker sensor (indicative data)',
         footer: '{city} Weather Station · data: OpenWeatherMap · updated automatically every hour'
@@ -190,11 +194,13 @@ const I18N = {
         chartMinTemp: 'Min temp (°C)',
         chartAvgTemp: 'Gem. temp (°C)',
 
-        dstSummer: 'Tot de zomertijd:',
-        dstWinter: 'Tot de wintertijd:',
+        dstSummer: 'Tot de zomertijd',
+        dstWinter: 'Tot de wintertijd',
+        dstWhen: 'Tijdwissel: {date}, de klok gaat van {from} naar {to}',
         days: { one: 'dag', other: 'dagen' },
         hoursShort: 'u',
         minutesShort: 'min',
+        secondsShort: 's',
 
         footerAir: 'luchtkwaliteit: sensor van InPost-pakketautomaat (indicatieve gegevens)',
         footer: 'Weerstation {city} · gegevens: OpenWeatherMap · elk uur automatisch bijgewerkt'

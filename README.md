@@ -16,7 +16,7 @@ A robust web application designed to monitor, archive, and visualize weather dat
 * **Monthly Table:** Max/Min temperature for each of the last 14 months.
 * **Trend Analysis:** Yearly trend chart visualizing daily Min/Max temperatures over the last 12 months.
 * **Average Temperatures:** Average temperature chart for today (hourly), last 7/30 days, current month, and current/previous years (monthly).
-* **DST Countdown:** Countdown to the next EU daylight saving time change (last Sunday of March/October, 01:00 UTC).
+* **DST Countdown:** Live countdown (days, hours, minutes, seconds) to the next EU daylight saving time change (last Sunday of March/October, 01:00 UTC), with a sun/snowflake icon, a progress bar since the previous change and the exact clock change in the tooltip.
 * **Automated Archiving:** Bash script that packs raw JSON files older than 24h into a tar archive.
 * **Languages:** Polish, English and Dutch, switchable in the top bar (choice is remembered; `?lang=en` links work; default follows the browser language). Adding a language means adding one dictionary to `i18n.js`.
 * **Responsive Design:** Dark-themed interface optimized for both mobile and desktop devices (built with **Bootstrap 5**).
